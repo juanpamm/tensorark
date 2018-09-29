@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load bootstrap3 %}
+{% load staticfiles %}
+
+{% block title_block %} Deep Neural Network Training {% endblock  %}
+
+{% block page_title_block %} Deep Neural Network Training {% endblock %}
+
+{% block css_block %}
+
+    <style>
+        #result_area {
+            resize: none;
+        }
+    </style>
+
+{% endblock %}
+
+{% block body_block %}
+    <div class="row">
+        <div class="col-lg-6 offset-lg-3">
+            <div class="card">
+                <div class="card-header">
+                    <strong class="card-title">
+                        Neural Network Design
+                    </strong>
+                </div>
+                <div class="card-body">
+                    <form role="form" method="POST"> {% csrf_token %}
+                        <div class="form-group">
+                            <label for="num_hid_layers" class="control-label mb-1">
+                                Number of layers for the network
+                            </label>
+                            <input id="num_hid_layers" type="number" class="form-control"
+                            aria-required="true" aria-invalid="false">
+                        </div>
+                        <div class="form-group">
+                            <label for="num_nodes" class="control-label mb-1">
+                                Number of nodes for the layers
+                            </label>
+                            <input id="num_nodes" type="number" class="form-control"
+                            aria-required="true" aria-invalid="false">
+                        </div>
+                        <div class="form-group">
+                            <label for="num_epoch" class="control-label mb-1">
+                                Number of epochs
+                            </label>
+                            <input id="num_epoch" type="number" class="form-control"
+                            aria-required="true" aria-invalid="false">
+                        </div>
+                        <div>
+                            <button type="button" id="train_button" class="btn btn-info">
+                                Train network
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-1">
+            <label class="form-control-label" for="result_area"> Results </label>
+        </div>
+        <div class="col-md-10">
+            <textarea class="form-control" id="result_area" rows="3" placeholder="Accuracy of the network"
+            ></textarea>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js_block %}
+    <script>
+
+        function clear_fields(){
+            $('#num_hid_layers').val("");
+            $('#num_nodes').val("");
+            $('#num_epoch').val("");
+        }
+
+        $('#train_button').on('click', function () {
+            var num_hidden_layers = $('#num_hid_layers').val();
+            var number_nodes = $('#num_nodes').val();
+            var number_epochs = $('#num_epoch').val();
+
+            if(num_hidden_layers == "" || number_nodes == "" || number_epochs == ""){
+                alert("Please, fill all fields");
+            }else{
+                $.ajax({
+                    data:{'layers': num_hidden_layers, 'nodes': number_nodes, 'epochs': number_epochs},
+                    url:"{% url 'execute_nn_training' %}",
+                    success: function (data) {
+                        var json = JSON.parse(data);
+                        $('#result_area').val("Accuracy: " + json.net_accuracy + "%");
+                    },
+                    dataType: "json",
+                    error: function () {
+                        alert("Ocurrió un error al conectar con el servidor");
+                    }
+                });
+            }
+        });
+
+
+    </script>
+{% endblock %}

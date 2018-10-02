@@ -1,0 +1,5 @@
+Django
+Pillow
+tensorflow==1.5
+django-select2
+django-bootstrap3

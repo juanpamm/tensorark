@@ -8,9 +8,15 @@
 
 {% block css_block %}
 
+    <link rel="stylesheet" href="{% static 'assets/css/lib/chosen/chosen.min.css' %}">
+
     <style>
         #result_area {
             resize: none;
+        }
+
+        #select-div {
+            margin-top: -15px;
         }
     </style>
 
@@ -48,6 +54,17 @@
                             <input id="num_epoch" type="number" class="form-control"
                             aria-required="true" aria-invalid="false">
                         </div>
+                        <div class="form-group">
+                            <label for="act_func_op" class="control-label mb-1">
+                                Activation functions
+                            </label>
+                            <select id="act_func_op" class="standardSelect"
+                            data-placeholder="Choose an activation function..." tabindex="1">
+                                <option value=""></option>
+                                <option value="relu">Rectified Linear Unit</option>
+                                <option value="sigmoid">Sigmoid</option>
+                            </select>
+                        </div>
                         <div>
                             <button type="button" id="train_button" class="btn btn-info">
                                 Train network
@@ -70,6 +87,19 @@
 {% endblock %}
 
 {% block js_block %}
+
+    <script src="{% static 'assets/js/lib/chosen/chosen.jquery.min.js' %}"></script>
+
+    <script>
+        jQuery(document).ready(function() {
+            jQuery(".standardSelect").chosen({
+                disable_search_threshold: 0,
+                no_results_text: "Oops, nothing found!",
+                width: "100%"
+            });
+        });
+    </script>
+
     <script>
 
         function clear_fields(){
@@ -79,15 +109,17 @@
         }
 
         $('#train_button').on('click', function () {
+            var activation_function = $('#act_func_op option:selected').text();
             var num_hidden_layers = $('#num_hid_layers').val();
             var number_nodes = $('#num_nodes').val();
             var number_epochs = $('#num_epoch').val();
 
-            if(num_hidden_layers == "" || number_nodes == "" || number_epochs == ""){
+            if(num_hidden_layers == "" || number_nodes == "" || number_epochs == "" || activation_function == ""){
                 alert("Please, fill all fields");
             }else{
                 $.ajax({
-                    data:{'layers': num_hidden_layers, 'nodes': number_nodes, 'epochs': number_epochs},
+                    data:{'layers': num_hidden_layers, 'nodes': number_nodes, 'epochs': number_epochs,
+                        'act_func': activation_function},
                     url:"{% url 'execute_nn_training' %}",
                     success: function (data) {
                         var json = JSON.parse(data);

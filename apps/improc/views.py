@@ -4,10 +4,91 @@ import json
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
-# Create your views here.
+
+def apply_sigmoid_to_net(data, hidden_lay_list, lay_list):
+    num_layers = len(hidden_lay_list)
+
+    for j in range(num_layers):
+        if j == 0:
+            l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
+            l1 = tf.nn.sigmoid(l1)
+            lay_list.append(l1)
+        elif j == (num_layers - 1):
+            output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) + \
+                     hidden_lay_list[num_layers - 1]['biases']
+            lay_list.append(output)
+        else:
+            li = tf.matmul(lay_list[j - 1], hidden_lay_list[j]['weights']) + hidden_lay_list[j]['biases']
+            li = tf.nn.sigmoid(li)
+            lay_list.append(li)
 
 
-def neural_network_model(data, nodes_hl, num_layers):
+def apply_relu_to_net(data, hidden_lay_list, lay_list):
+    num_layers = len(hidden_lay_list)
+
+    for j in range(num_layers):
+        if j == 0:
+            l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
+            l1 = tf.nn.relu(l1)
+            lay_list.append(l1)
+        elif j == (num_layers - 1):
+            output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) + \
+                     hidden_lay_list[num_layers - 1]['biases']
+            lay_list.append(output)
+        else:
+            li = tf.matmul(lay_list[j - 1], hidden_lay_list[j]['weights']) + hidden_lay_list[j]['biases']
+            li = tf.nn.relu(li)
+            lay_list.append(li)
+
+
+def apply_elu_to_net(data, hidden_lay_list, lay_list):
+    num_layers = len(hidden_lay_list)
+
+    for j in range(num_layers):
+        if j == 0:
+            l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
+            l1 = tf.nn.elu(l1)
+            lay_list.append(l1)
+        elif j == (num_layers - 1):
+            output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) + \
+                     hidden_lay_list[num_layers - 1]['biases']
+            lay_list.append(output)
+        else:
+            li = tf.matmul(lay_list[j - 1], hidden_lay_list[j]['weights']) + hidden_lay_list[j]['biases']
+            li = tf.nn.elu(li)
+            lay_list.append(li)
+
+
+def apply_tanh_to_net(data, hidden_lay_list, lay_list):
+    num_layers = len(hidden_lay_list)
+
+    for j in range(num_layers):
+        if j == 0:
+            l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
+            l1 = tf.nn.tanh(l1)
+            lay_list.append(l1)
+        elif j == (num_layers - 1):
+            output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) + \
+                     hidden_lay_list[num_layers - 1]['biases']
+            lay_list.append(output)
+        else:
+            li = tf.matmul(lay_list[j - 1], hidden_lay_list[j]['weights']) + hidden_lay_list[j]['biases']
+            li = tf.nn.tanh(li)
+            lay_list.append(li)
+
+
+def apply_act_func(act_func, lay_list, data, hidden_lay_list):
+    switch = {
+        'relu': apply_relu_to_net(data, hidden_lay_list, lay_list),
+        'sigmoid': apply_sigmoid_to_net(data, hidden_lay_list, lay_list),
+        'tanh': apply_tanh_to_net(data, hidden_lay_list, lay_list),
+        'elu': apply_elu_to_net(data, hidden_lay_list, lay_list)
+    }
+
+    switch.get(act_func)
+
+
+def neural_network_model(data, nodes_hl, num_layers, act_function):
     # (input_data * weights) + biases
     n_classes = 10
     hidden_layer_list = []
@@ -18,40 +99,30 @@ def neural_network_model(data, nodes_hl, num_layers):
             first_layer = {'weights': tf.Variable(tf.random_normal([784, nodes_hl])),
                            'biases': tf.Variable(tf.random_normal([nodes_hl]))}
             hidden_layer_list.append(first_layer)
+
         elif i == (num_layers - 1):
             output_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl, n_classes])),
                             'biases': tf.Variable(tf.random_normal([n_classes]))}
             hidden_layer_list.append(output_layer)
+
         else:
             hidden_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl, nodes_hl])),
                             'biases': tf.Variable(tf.random_normal([nodes_hl]))}
             hidden_layer_list.append(hidden_layer)
 
-    for j in range(num_layers):
-        if j == 0:
-            l1 = tf.matmul(data, hidden_layer_list[0]['weights']) + hidden_layer_list[0]['biases']
-            l1 = tf.nn.relu(l1)
-            layers_list.append(l1)
-        elif j == (num_layers - 1):
-            output = tf.matmul(layers_list[num_layers - 2], hidden_layer_list[num_layers - 1]['weights']) + \
-                     hidden_layer_list[num_layers - 1]['biases']
-            layers_list.append(output)
-        else:
-            li = tf.matmul(layers_list[j - 1], hidden_layer_list[j]['weights']) + hidden_layer_list[j]['biases']
-            li = tf.nn.relu(li)
-            layers_list.append(li)
+    apply_act_func(act_function, layers_list, data, hidden_layer_list)
 
     return layers_list[num_layers - 1]
 
 
-def train_neural_network(nodes_hl, num_layers, num_epochs):
+def train_neural_network(nodes_hl, num_layers, num_epochs, act_function):
     mnist = input_data.read_data_sets("/tmp/data", one_hot=True)
     # height x width
     x = tf.placeholder('float', [None, 784])
     y = tf.placeholder('float')
     batch_size = 100
 
-    prediction = neural_network_model(x, nodes_hl, num_layers)
+    prediction = neural_network_model(x, nodes_hl, num_layers, act_function)
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=y))
     optimizer = tf.train.AdamOptimizer().minimize(cost)
 
@@ -81,12 +152,13 @@ def execute_nn_training(request):
     layers = int(request.GET.get('layers'))
     nodes = int(request.GET.get('nodes'))
     epochs = int(request.GET.get('epochs'))
+    activation_function = request.GET.get('act_func')
 
-    accuracy = train_neural_network(nodes, layers, epochs)
+    accuracy = train_neural_network(nodes, layers, epochs, activation_function)
     acc_percentage = accuracy * 100
-
+    st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
     training_result = {
-        'net_accuracy': str(acc_percentage)
+        'net_accuracy': st_percentage
     }
 
     json_data = json.dumps(training_result)

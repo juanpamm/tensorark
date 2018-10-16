@@ -41,10 +41,48 @@ def apply_relu_to_net(data, hidden_lay_list, lay_list):
             lay_list.append(li)
 
 
+def apply_elu_to_net(data, hidden_lay_list, lay_list):
+    num_layers = len(hidden_lay_list)
+
+    for j in range(num_layers):
+        if j == 0:
+            l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
+            l1 = tf.nn.elu(l1)
+            lay_list.append(l1)
+        elif j == (num_layers - 1):
+            output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) + \
+                     hidden_lay_list[num_layers - 1]['biases']
+            lay_list.append(output)
+        else:
+            li = tf.matmul(lay_list[j - 1], hidden_lay_list[j]['weights']) + hidden_lay_list[j]['biases']
+            li = tf.nn.elu(li)
+            lay_list.append(li)
+
+
+def apply_tanh_to_net(data, hidden_lay_list, lay_list):
+    num_layers = len(hidden_lay_list)
+
+    for j in range(num_layers):
+        if j == 0:
+            l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
+            l1 = tf.nn.tanh(l1)
+            lay_list.append(l1)
+        elif j == (num_layers - 1):
+            output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) + \
+                     hidden_lay_list[num_layers - 1]['biases']
+            lay_list.append(output)
+        else:
+            li = tf.matmul(lay_list[j - 1], hidden_lay_list[j]['weights']) + hidden_lay_list[j]['biases']
+            li = tf.nn.tanh(li)
+            lay_list.append(li)
+
+
 def apply_act_func(act_func, lay_list, data, hidden_lay_list):
     switch = {
         'relu': apply_relu_to_net(data, hidden_lay_list, lay_list),
-        'sigmoid': apply_sigmoid_to_net(data, hidden_lay_list, lay_list)
+        'sigmoid': apply_sigmoid_to_net(data, hidden_lay_list, lay_list),
+        'tanh': apply_tanh_to_net(data, hidden_lay_list, lay_list),
+        'elu': apply_elu_to_net(data, hidden_lay_list, lay_list)
     }
 
     switch.get(act_func)

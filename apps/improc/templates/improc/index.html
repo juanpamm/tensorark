@@ -116,9 +116,17 @@
             var number_nodes = $('#num_nodes').val();
             var number_epochs = $('#num_epoch').val();
 
+
             if(num_hidden_layers == "" || number_nodes == "" || number_epochs == "" || activation_function == ""){
                 alert("Please, fill all fields");
             }else{
+
+                $('#train_button').attr('disabled', true);
+                $('#num_hid_layers').attr('disabled', true);
+                $('#num_nodes').attr('disabled', true);
+                $('#num_epoch').attr('disabled', true);
+                $('#act_func_op').attr('disabled', 'disabled');
+
                 $.ajax({
                     data:{'layers': num_hidden_layers, 'nodes': number_nodes, 'epochs': number_epochs,
                         'act_func': activation_function},

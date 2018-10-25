@@ -9,14 +9,11 @@
 {% block css_block %}
 
     <link rel="stylesheet" href="{% static 'assets/css/lib/chosen/chosen.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/lib/datatable/dataTables.bootstrap.min.css' %}">
 
     <style>
         #result_area {
             resize: none;
-        }
-
-        #select-div {
-            margin-top: -15px;
         }
     </style>
 
@@ -38,13 +35,6 @@
                                 Number of layers for the network
                             </label>
                             <input id="num_hid_layers" type="number" class="form-control"
-                            aria-required="true" aria-invalid="false">
-                        </div>
-                        <div class="form-group">
-                            <label for="num_nodes" class="control-label mb-1">
-                                Number of nodes for the layers
-                            </label>
-                            <input id="num_nodes" type="number" class="form-control"
                             aria-required="true" aria-invalid="false">
                         </div>
                         <div class="form-group">
@@ -76,6 +66,29 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <strong class="card-title">Set the nodes for each layer</strong>
+                </div>
+                <div class="card-body">
+                    <table id="node-table" class="table table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Layer</th>
+                                    <th>Number of nodes</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>Layer</th>
+                                    <th>Number of nodes</th>
+                                </tr>
+                            </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="row">
         <div class="col-md-1">
@@ -83,14 +96,28 @@
         </div>
         <div class="col-md-10">
             <textarea class="form-control" id="result_area" rows="3" placeholder="Accuracy of the network"
-            ></textarea>
+            readonly></textarea>
         </div>
     </div>
 {% endblock %}
 
 {% block js_block %}
 
+    <!-- Datatable scripts -->
+
+    <script src="{% static 'assets/js/lib/data-table/datatables.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/vfs_fonts.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.html5.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.print.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.colVis.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/datatables-init.js' %}"></script>
+
     <script src="{% static 'assets/js/lib/chosen/chosen.jquery.min.js' %}"></script>
+
+
 
     <script>
         jQuery(document).ready(function() {
@@ -99,6 +126,8 @@
                 no_results_text: "Oops, nothing found!",
                 width: "100%"
             });
+
+            $("#node-table").DataTable();
         });
     </script>
 
@@ -125,7 +154,7 @@
                 $('#num_hid_layers').attr('disabled', true);
                 $('#num_nodes').attr('disabled', true);
                 $('#num_epoch').attr('disabled', true);
-                $('#act_func_op').attr('disabled', 'disabled');
+                $('#act_func_op_chosen').attr('disabled', 'disabled');
 
                 $.ajax({
                     data:{'layers': num_hidden_layers, 'nodes': number_nodes, 'epochs': number_epochs,

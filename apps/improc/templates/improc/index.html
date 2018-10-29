@@ -58,15 +58,20 @@
                             </select>
                         </div>
                         <div>
-                            <button type="button" id="train_button" class="btn btn-info">
+                            <button type="button" id="train_button" class="btn btn-info" style="display: none;">
                                 Train network
+                            </button>
+                        </div>
+                        <div>
+                            <button type="button" id="add_nodes" class="btn btn-info">
+                                Add nodes
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-        <div class="col-md-12">
+        <div class="col-lg-8 offset-lg-2">
             <div class="card">
                 <div class="card-header">
                     <strong class="card-title">Set the nodes for each layer</strong>
@@ -135,7 +140,6 @@
 
         function clear_fields(){
             $('#num_hid_layers').val("");
-            $('#num_nodes').val("");
             $('#num_epoch').val("");
         }
 
@@ -172,6 +176,16 @@
             }
         });
 
+        var table = $("#node-table").DataTable();
+
+        $('#add_nodes').on('click', function () {
+            var layers = $('#num_hid_layers').val();
+
+            for (i = 0; i < layers; i++){
+                table.row.add([(i + 1), "<input type='number' id='row-layer-i' name='row-layer-i' value=''>"]).draw();
+            }
+
+        });
 
     </script>
 {% endblock %}

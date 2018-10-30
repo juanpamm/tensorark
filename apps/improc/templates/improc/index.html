@@ -57,17 +57,19 @@
                                 <option value="elu">Exponential Linear Unit</option>
                             </select>
                         </div>
-                        <div>
-                            <button type="button" id="train_button" class="btn btn-info" style="display: none;">
-                                Train network
-                            </button>
-                        </div>
-                        <div>
-                            <button type="button" id="add_nodes" class="btn btn-info">
-                                Add nodes
-                            </button>
-                        </div>
                     </form>
+                    <div class="row">
+                            <div class="col-md-4 offset-md-2">
+                                <button type="button" id="add_nodes" class="btn btn-info">
+                                    Add nodes
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" id="train_button" class="btn btn-info" disabled>
+                                    Train network
+                                </button>
+                            </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -138,6 +140,8 @@
 
     <script>
 
+        var table = $("#node-table").DataTable();
+
         function clear_fields(){
             $('#num_hid_layers').val("");
             $('#num_epoch').val("");
@@ -146,11 +150,15 @@
         $('#train_button').on('click', function () {
             var activation_function = $('#act_func_op option:selected').text();
             var num_hidden_layers = $('#num_hid_layers').val();
-            var number_nodes = $('#num_nodes').val();
             var number_epochs = $('#num_epoch').val();
+            var data_from_table = table.$("input").serializeArray();
+            var nodes = [];
 
+            for (let j = 0; j < num_hidden_layers; j++){
+                nodes.push(data_from_table[j].value);
+            }
 
-            if(num_hidden_layers == "" || number_nodes == "" || number_epochs == "" || activation_function == ""){
+            if(num_hidden_layers == "" || number_epochs == "" || activation_function == ""){
                 alert("Please, fill all fields");
             }else{
 
@@ -161,7 +169,7 @@
                 $('#act_func_op_chosen').attr('disabled', 'disabled');
 
                 $.ajax({
-                    data:{'layers': num_hidden_layers, 'nodes': number_nodes, 'epochs': number_epochs,
+                    data:{'layers': num_hidden_layers, 'nodes': JSON.stringify(nodes) ,'epochs': number_epochs,
                         'act_func': activation_function},
                     url:"{% url 'execute_nn_training' %}",
                     success: function (data) {
@@ -170,21 +178,31 @@
                     },
                     dataType: "json",
                     error: function () {
-                        alert("Ocurrió un error al conectar con el servidor");
+                        alert("There was an error in the server");
                     }
                 });
             }
         });
 
-        var table = $("#node-table").DataTable();
-
         $('#add_nodes').on('click', function () {
             var layers = $('#num_hid_layers').val();
+            var row_id = '';
 
-            for (i = 0; i < layers; i++){
-                table.row.add([(i + 1), "<input type='number' id='row-layer-i' name='row-layer-i' value=''>"]).draw();
+            if(layers == ''){
+                alert("Please specify a number of layers");
             }
+            else if(layers == 0){
+                alert("Please enter at least one layer");
+            }
+            else{
+                $('#train_button').prop('disabled', false);
 
+                for (let i = 0; i < layers; i++){
+                    row_id = 'row-layer-' + (i + 1);
+                    table.row.add([(i + 1), "<input type='number' id='" + row_id + "'" + " name='" + row_id
+                                    + "'" + " value=''>"]).draw();
+                }
+            }
         });
 
     </script>

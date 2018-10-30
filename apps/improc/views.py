@@ -30,6 +30,7 @@ def apply_relu_to_net(data, hidden_lay_list, lay_list):
         if j == 0:
             l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
             l1 = tf.nn.relu(l1)
+            print('Layer 1:' + str(l1))
             lay_list.append(l1)
         elif j == (num_layers - 1):
             output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) + \
@@ -96,18 +97,19 @@ def neural_network_model(data, nodes_hl, num_layers, act_function):
 
     for i in range(num_layers):
         if i == 0:
-            first_layer = {'weights': tf.Variable(tf.random_normal([784, nodes_hl])),
-                           'biases': tf.Variable(tf.random_normal([nodes_hl]))}
+            first_layer = {'weights': tf.Variable(tf.random_normal([784, nodes_hl[0]])),
+                           'biases': tf.Variable(tf.random_normal([nodes_hl[0]]))}
+            print('Weight: ' + str(first_layer['weights']))
             hidden_layer_list.append(first_layer)
 
         elif i == (num_layers - 1):
-            output_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl, n_classes])),
+            output_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl[num_layers - 1], n_classes])),
                             'biases': tf.Variable(tf.random_normal([n_classes]))}
             hidden_layer_list.append(output_layer)
 
         else:
-            hidden_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl, nodes_hl])),
-                            'biases': tf.Variable(tf.random_normal([nodes_hl]))}
+            hidden_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl[i - 1], nodes_hl[i]])),
+                            'biases': tf.Variable(tf.random_normal([nodes_hl[i]]))}
             hidden_layer_list.append(hidden_layer)
 
     apply_act_func(act_function, layers_list, data, hidden_layer_list)
@@ -150,7 +152,11 @@ def index(request):
 
 def execute_nn_training(request):
     layers = int(request.GET.get('layers'))
-    nodes = int(request.GET.get('nodes'))
+    nodes = json.loads(request.GET.get('nodes'))
+
+    for i in range(len(nodes)):
+        nodes[i] = int(nodes[i])
+
     epochs = int(request.GET.get('epochs'))
     activation_function = request.GET.get('act_func')
 

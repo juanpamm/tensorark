@@ -99,20 +99,18 @@ def neural_network_model(data, nodes_hl, num_layers, act_function):
             first_layer = {'weights': tf.Variable(tf.random_normal([784, nodes_hl[0]])),
                            'biases': tf.Variable(tf.random_normal([nodes_hl[0]]))}
             hidden_layer_list.append(first_layer)
-
-        elif i == (num_layers - 1):
-            output_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl[num_layers - 2], n_classes])),
-                            'biases': tf.Variable(tf.random_normal([n_classes]))}
-            hidden_layer_list.append(output_layer)
-
         else:
             hidden_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl[i - 1], nodes_hl[i]])),
                             'biases': tf.Variable(tf.random_normal([nodes_hl[i]]))}
             hidden_layer_list.append(hidden_layer)
 
+    output_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl[num_layers - 1], n_classes])),
+                    'biases': tf.Variable(tf.random_normal([n_classes]))}
+    hidden_layer_list.append(output_layer)
+
     apply_act_func(act_function, layers_list, data, hidden_layer_list)
 
-    return layers_list[num_layers - 1]
+    return layers_list[num_layers]
 
 
 def train_neural_network(nodes_hl, num_layers, num_epochs, act_function):

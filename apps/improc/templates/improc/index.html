@@ -134,7 +134,7 @@
                 width: "100%"
             });
 
-            $("#node-table").DataTable();
+            //$("#node-table").DataTable();
         });
     </script>
 
@@ -196,6 +196,8 @@
             }
             else{
                 $('#train_button').prop('disabled', false);
+
+                table.rows().remove().draw();
 
                 for (let i = 0; i < layers; i++){
                     row_id = 'row-layer-' + (i + 1);

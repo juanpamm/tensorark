@@ -32,7 +32,7 @@
                     <form role="form" method="POST"> {% csrf_token %}
                         <div class="form-group">
                             <label for="num_hid_layers" class="control-label mb-1">
-                                Number of layers for the network
+                                Number of hidden layers for the network
                             </label>
                             <input id="num_hid_layers" type="number" class="form-control"
                             aria-required="true" aria-invalid="false">
@@ -49,7 +49,7 @@
                                 Activation functions
                             </label>
                             <select id="act_func_op" class="standardSelect"
-                            data-placeholder="Choose an activation function..." tabindex="1">
+                            data-placeholder="Choose an activation function...">
                                 <option value=""></option>
                                 <option value="relu">Rectified Linear Unit</option>
                                 <option value="sigmoid">Sigmoid</option>
@@ -103,6 +103,11 @@
                         <div class="col-md-4 offset-md-4">
                             <button type="button" id="train_button" class="btn btn-info" disabled>
                                 Train network
+                            </button>
+                        </div>
+                        <div class="col-md-4 offset-md-3">
+                            <button type="button" id="train_other_button" class="btn btn-success" hidden>
+                                Train another network
                             </button>
                         </div>
                     </div>
@@ -159,10 +164,25 @@
 
         var table = $("#node-table").DataTable();
 
-        function clear_fields(){
+        function reset_all(){
             $('#num_hid_layers').val("");
             $('#num_epoch').val("");
+            $('#act_func_op').val('').trigger('chosen:updated');
+            table.rows().remove().draw();
+            $('#result_div').html('');
+            $('#label_result_area').prop('hidden', true);
+
+            $('#num_hid_layers').prop('disabled', false);
+            $('#num_nodes').prop('disabled', false);
+            $('#num_epoch').prop('disabled', false);
+            $('#act_func_op').prop('disabled', false).trigger('chosen:updated');
         }
+
+        $('#train_other_button').on('click', function () {
+            reset_all();
+            $('#train_other_button').prop('hidden', true);
+            $('#train_button').prop('hidden', false);
+        });
 
         $('#train_button').on('click', function () {
             var activation_function = $('#act_func_op option:selected').text();
@@ -179,11 +199,11 @@
                 alert("Please, fill all fields");
             }else{
 
-                $('#train_button').attr('disabled', true);
-                $('#num_hid_layers').attr('disabled', true);
-                $('#num_nodes').attr('disabled', true);
-                $('#num_epoch').attr('disabled', true);
-                $('#act_func_op_chosen').attr('disabled', 'disabled');
+                $('#train_button').prop('disabled', true);
+                $('#num_hid_layers').prop('disabled', true);
+                $('#num_nodes').prop('disabled', true);
+                $('#num_epoch').prop('disabled', true);
+                $('#act_func_op').prop('disabled', true).trigger('chosen:updated');
 
                 $.ajax({
                     data:{'layers': num_hidden_layers, 'nodes': JSON.stringify(nodes) ,'epochs': number_epochs,
@@ -197,6 +217,8 @@
                                                 'tabindex="1" readonly></textarea>');
                         $('#result_area').val("Accuracy: " + json.net_accuracy + "%");
                         $('#result_area').focus();
+                        $('#train_button').prop('hidden', true);
+                        $('#train_other_button').prop('hidden', false);
                     },
                     dataType: "json",
                     error: function () {

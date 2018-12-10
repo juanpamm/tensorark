@@ -34,14 +34,14 @@
                             <label for="num_hid_layers" class="control-label mb-1">
                                 Number of hidden layers for the network
                             </label>
-                            <input id="num_hid_layers" type="number" class="form-control"
+                            <input id="num_hid_layers" type="number" min="1" oninput="validity.valid||(value='');" class="form-control"
                             aria-required="true" aria-invalid="false">
                         </div>
                         <div class="form-group">
                             <label for="num_epoch" class="control-label mb-1">
                                 Number of epochs
                             </label>
-                            <input id="num_epoch" type="number" class="form-control"
+                            <input id="num_epoch" type="number" min="1" oninput="validity.valid||(value='');" class="form-control"
                             aria-required="true" aria-invalid="false">
                         </div>
                         <div class="form-group">
@@ -246,7 +246,7 @@
                 for (let i = 0; i < layers; i++){
                     row_id = 'row-layer-' + (i + 1);
                     table.row.add([(i + 1), "<input type='number' id='" + row_id + "'" + " name='" + row_id
-                                    + "'" + " value=''>"]).draw();
+                                    + "'" + "min='1' oninput=validity.valid||(value=''); value=''>"]).draw();
                 }
             }
         });

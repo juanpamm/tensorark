@@ -1,5 +1,8 @@
+numpy
 Django
 Pillow
 tensorflow==1.5
+keras
 django-select2
 django-bootstrap3
+matplotlib

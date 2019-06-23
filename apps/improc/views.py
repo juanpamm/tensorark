@@ -7,7 +7,6 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.examples.tutorials.mnist import input_data
 from keras.datasets import fashion_mnist
-saver = None
 
 
 def tensorflow_test_script():
@@ -27,7 +26,6 @@ def tensorflow_test_script():
         keras.layers.Dense(128, activation=tf.nn.relu),
         keras.layers.Dense(10, activation=tf.nn.softmax)
     ])
-
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
@@ -44,7 +42,7 @@ def tensorflow_test_script():
 
     print(np.argmax(predictions[0]))
 
-    print(test_labels[0])
+    print(class_names[test_labels[0]])
 
 
 def apply_sigmoid_to_net(data, hidden_lay_list, lay_list):

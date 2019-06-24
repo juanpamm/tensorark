@@ -5,8 +5,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
+from keras.layers import Dense
 from tensorflow.examples.tutorials.mnist import input_data
 from keras.datasets import fashion_mnist
+
+
+def build_neural_network(layers, nodes, act_functions, epochs):
+    model = keras.Sequential([
+        keras.layers.Flatten(input_shape=(28, 28))
+    ])
+
+    for i in range(layers):
+        if act_functions[i] == 'relu':
+            model.add(Dense(nodes[i], activation=tf.nn.relu))
+        elif act_functions[i] == 'sigmoid':
+            model.add(Dense(nodes[i], activation=tf.nn.sigmoid))
+        elif act_functions[i] == 'tanh':
+            model.add(Dense(nodes[i], activation=tf.nn.tanh))
+        elif act_functions[i] == 'elu':
+            model.add(Dense(nodes[i], activation=tf.nn.elu))
 
 
 def tensorflow_test_script():
@@ -192,12 +209,14 @@ def execute_nn_training(request):
 
     layers = int(request.GET.get('layers'))
     nodes = json.loads(request.GET.get('nodes'))
+    activation_functions = request.GET.get('act_func')
+    epochs = int(request.GET.get('epochs'))
 
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
 
-    epochs = int(request.GET.get('epochs'))
-    activation_function = request.GET.get('act_func')
+
+
 
     accuracy = train_neural_network(nodes, layers, epochs, activation_function)
     acc_percentage = accuracy * 100

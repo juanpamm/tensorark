@@ -199,7 +199,8 @@
                         $('#result_div').html('');
                         $('#result_div').html('<textarea class="form-control" id="result_area" rows="3" placeholder="Accuracy of the network"\n' +
                                                 'tabindex="1" readonly></textarea>');
-                        $('#result_area').val("Accuracy: " + json.net_accuracy + "%");
+                        $('#result_area').val("Accuracy: " + json.net_accuracy + "% \n" + "First prediction: " +
+                                                json.prediction);
                         $('#result_area').focus();
                         $('#train_button').prop('hidden', true);
                         $('#train_other_button').prop('hidden', false);

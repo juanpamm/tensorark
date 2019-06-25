@@ -10,23 +10,42 @@ from tensorflow.examples.tutorials.mnist import input_data
 from keras.datasets import fashion_mnist
 
 
-def build_neural_network(layers, nodes, act_functions, epochs):
+def index(request):
+    return render(request, 'improc/index.html')
+
+
+def add_layers_to_network(model, nodes, activation_func):
+    if activation_func == 'relu':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.relu))
+    elif activation_func == 'sigmoid':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.sigmoid))
+    elif activation_func == 'tanh':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.tanh))
+    elif activation_func == 'elu':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.elu))
+    elif activation_func == 'softmax':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.softmax))
+
+
+def build_neural_network(layers, nodes, act_functions):
     model = keras.Sequential([
         keras.layers.Flatten(input_shape=(28, 28))
     ])
 
     for i in range(layers):
-        if act_functions[i] == 'relu':
-            model.add(Dense(nodes[i], activation=tf.nn.relu))
-        elif act_functions[i] == 'sigmoid':
-            model.add(Dense(nodes[i], activation=tf.nn.sigmoid))
-        elif act_functions[i] == 'tanh':
-            model.add(Dense(nodes[i], activation=tf.nn.tanh))
-        elif act_functions[i] == 'elu':
-            model.add(Dense(nodes[i], activation=tf.nn.elu))
+        if i == (layers - 1):
+            add_layers_to_network(model, 10, 'softmax')
+        else:
+            add_layers_to_network(model, nodes[i], act_functions[i])
+
+    model.compile(optimizer='adam',
+                  loss='sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
+
+    return model
 
 
-def tensorflow_test_script():
+def train_neural_network_v2(layers, nodes, act_functions, epochs):
     fashion_mnist_set = fashion_mnist
 
     (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
@@ -38,16 +57,9 @@ def tensorflow_test_script():
 
     test_images = test_images / 255.0
 
-    model = keras.Sequential([
-        keras.layers.Flatten(input_shape=(28, 28)),
-        keras.layers.Dense(128, activation=tf.nn.relu),
-        keras.layers.Dense(10, activation=tf.nn.softmax)
-    ])
-    model.compile(optimizer='adam',
-                  loss='sparse_categorical_crossentropy',
-                  metrics=['accuracy'])
+    model = build_neural_network(layers, nodes, act_functions)
 
-    model.fit(train_images, train_labels, epochs=5)
+    model.fit(train_images, train_labels, epochs=epochs)
 
     test_loss, test_acc = model.evaluate(test_images, test_labels)
 
@@ -59,9 +71,12 @@ def tensorflow_test_script():
 
     print(np.argmax(predictions[0]))
 
-    print(class_names[test_labels[0]])
+    print(class_names[int(np.argmax(predictions[0]))])
+
+    return {"accuracy": test_acc, "predictions": predictions, "first_predict": class_names[int(np.argmax(predictions[0]))]}
 
 
+'''
 def apply_sigmoid_to_net(data, hidden_lay_list, lay_list):
     num_layers = len(hidden_lay_list)
 
@@ -197,16 +212,10 @@ def train_neural_network(nodes_hl, num_layers, num_epochs, act_function):
         correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         return accuracy.eval({x: mnist.test.images, y: mnist.test.labels})
-
-
-def index(request):
-    return render(request, 'improc/index.html')
+'''
 
 
 def execute_nn_training(request):
-
-    tensorflow_test_script()
-
     layers = int(request.GET.get('layers'))
     nodes = json.loads(request.GET.get('nodes'))
     activation_functions = request.GET.get('act_func')
@@ -215,14 +224,13 @@ def execute_nn_training(request):
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
 
+    results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 
-
-
-    accuracy = train_neural_network(nodes, layers, epochs, activation_function)
-    acc_percentage = accuracy * 100
+    acc_percentage = results.get("accuracy") * 100
     st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
     training_result = {
-        'net_accuracy': st_percentage
+        'net_accuracy': st_percentage,
+        'prediction': results.get("first_predict")
     }
 
     json_data = json.dumps(training_result)

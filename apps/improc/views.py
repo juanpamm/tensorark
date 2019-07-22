@@ -1,10 +1,82 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 import json
+import numpy as np
+import matplotlib.pyplot as plt
 import tensorflow as tf
+from tensorflow import keras
+from keras.layers import Dense
 from tensorflow.examples.tutorials.mnist import input_data
+from keras.datasets import fashion_mnist
 
 
+def index(request):
+    return render(request, 'improc/index.html')
+
+
+def add_layers_to_network(model, nodes, activation_func):
+    if activation_func == 'relu':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.relu))
+    elif activation_func == 'sigmoid':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.sigmoid))
+    elif activation_func == 'tanh':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.tanh))
+    elif activation_func == 'elu':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.elu))
+    elif activation_func == 'softmax':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.softmax))
+
+
+def build_neural_network(layers, nodes, act_functions):
+    model = keras.Sequential([
+        keras.layers.Flatten(input_shape=(28, 28))
+    ])
+
+    for i in range(layers):
+        if i == (layers - 1):
+            add_layers_to_network(model, 10, 'softmax')
+        else:
+            add_layers_to_network(model, nodes[i], act_functions[i])
+
+    model.compile(optimizer='adam',
+                  loss='sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
+
+    return model
+
+
+def train_neural_network_v2(layers, nodes, act_functions, epochs):
+    fashion_mnist_set = fashion_mnist
+
+    (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
+
+    class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+                   'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+
+    train_images = train_images / 255.0
+
+    test_images = test_images / 255.0
+
+    model = build_neural_network(layers, nodes, act_functions)
+
+    model.fit(train_images, train_labels, epochs=epochs)
+
+    test_loss, test_acc = model.evaluate(test_images, test_labels)
+
+    print('Test accuracy:', test_acc)
+
+    predictions = model.predict(test_images)
+
+    print(predictions[0])
+
+    print(np.argmax(predictions[0]))
+
+    print(class_names[int(np.argmax(predictions[0]))])
+
+    return {"accuracy": test_acc, "predictions": predictions, "first_predict": class_names[int(np.argmax(predictions[0]))]}
+
+
+'''
 def apply_sigmoid_to_net(data, hidden_lay_list, lay_list):
     num_layers = len(hidden_lay_list)
 
@@ -140,27 +212,25 @@ def train_neural_network(nodes_hl, num_layers, num_epochs, act_function):
         correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         return accuracy.eval({x: mnist.test.images, y: mnist.test.labels})
-
-
-def index(request):
-    return render(request, 'improc/index.html')
+'''
 
 
 def execute_nn_training(request):
     layers = int(request.GET.get('layers'))
     nodes = json.loads(request.GET.get('nodes'))
+    activation_functions = request.GET.get('act_func')
+    epochs = int(request.GET.get('epochs'))
 
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
 
-    epochs = int(request.GET.get('epochs'))
-    activation_function = request.GET.get('act_func')
+    results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 
-    accuracy = train_neural_network(nodes, layers, epochs, activation_function)
-    acc_percentage = accuracy * 100
+    acc_percentage = results.get("accuracy") * 100
     st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
     training_result = {
-        'net_accuracy': st_percentage
+        'net_accuracy': st_percentage,
+        'prediction': results.get("first_predict")
     }
 
     json_data = json.dumps(training_result)

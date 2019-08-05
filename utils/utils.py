@@ -120,7 +120,7 @@ def make_arrays(labelsAndFiles, ratio):
         channels = 1
     for i in range(0, len(labelsAndFiles)):
         # display progress, since this can take a while
-        if (i % 100 == 0):
+        if i % 100 == 0:
             sys.stdout.write("\r%d%% complete" %
                              ((i * 100) / len(labelsAndFiles)))
             sys.stdout.flush()
@@ -182,7 +182,7 @@ def write_imagedata(imagedata, outputfile):
         f.write(imagedata.tobytes())
 
 
-def main(argv):
+def convert_image_set(parameters):
     global idxLabelPath, idxImagePath
     # Uncomment the line below if you want to seed the random
     # number generator in the same way I did to produce the
@@ -190,19 +190,19 @@ def main(argv):
     # random.seed(int("notMNIST", 36))
     if not os.path.exists(dstPath):
         os.makedirs(dstPath)
-    if len(argv) is 3:
-        labelsAndFiles = get_labels_and_files(argv[1])
-    elif len(argv) is 4:
-        labelsAndFiles = get_labels_and_files(argv[1], int(argv[3]))
+    if len(parameters) is 3:
+        labelsAndFiles = get_labels_and_files(parameters[1])
+    elif len(parameters) is 4:
+        labelsAndFiles = get_labels_and_files(parameters[1], int(parameters[3]))
     random.shuffle(labelsAndFiles)
 
     trainImagedata, trainLabeldata, testImagedata, testLabeldata = make_arrays(
-        labelsAndFiles, argv[2])
+        labelsAndFiles, parameters[2])
 
-    if argv[2] == 'train':
+    if parameters[2] == 'train':
         write_labeldata(trainLabeldata, trainLabelPath)
         write_imagedata(trainImagedata, trainImagePath)
-    elif argv[2] == 'test':
+    elif parameters[2] == 'test':
         write_labeldata(testLabeldata, testLabelPath)
         write_imagedata(testImagedata, testImagePath)
     else:

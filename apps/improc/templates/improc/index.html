@@ -20,21 +20,21 @@
 {% endblock %}
 
 {% block body_block %}
-    <div class="row">
-        <div class="col-lg-6 offset-lg-3">
-            <div class="card">
-                <div class="card-header">
-                    <strong class="card-title">
-                        Neural network design
-                    </strong>
-                </div>
-                <div class="card-body">
-                    <form role="form" method="POST"> {% csrf_token %}
+    <form method="POST" id="dl_form" enctype="multipart/form-data"> {% csrf_token %}
+        <div class="row">
+            <div class="col-lg-6 offset-lg-3">
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">
+                            Neural network design
+                        </strong>
+                    </div>
+                    <div class="card-body">
                         <div class="form-group">
                             <label for="num_hid_layers" class="control-label mb-1">
                                 Number of hidden layers for the network
                             </label>
-                            <input id="num_hid_layers" type="number" min="1" oninput="validity.valid||(value='');" class="form-control"
+                            <input id="num_hid_layers" name="num_layers" type="number" min="1" oninput="validity.valid||(value='');" class="form-control"
                             aria-required="true" aria-invalid="false">
                         </div>
                         <div class="form-group">
@@ -44,74 +44,93 @@
                             <input id="num_epoch" type="number" min="1" oninput="validity.valid||(value='');" class="form-control"
                             aria-required="true" aria-invalid="false">
                         </div>
-                    </form>
-                    <div class="row">
-                        <div class="col-md-4 offset-md-4">
-                            <button type="button" id="add_nodes" class="btn btn-info">
-                                Configure network
-                            </button>
+                        <div class="row">
+                            <div class="col-md-4 offset-md-4">
+                                <button type="button" id="add_nodes" class="btn btn-info">
+                                    Configure network
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8 offset-lg-2">
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">Set the nodes and activation function for each layer</strong>
+                    </div>
+                    <div class="card-body">
+                        <table id="node-table" class="table table-striped table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Layer</th>
+                                        <th>Number of nodes</th>
+                                        <th>Activation function</th>
+                                    </tr>
+                                </thead>
+                                <tfoot>
+                                    <tr>
+                                        <th>Layer</th>
+                                        <th>Number of nodes</th>
+                                        <th>Activation function</th>
+                                    </tr>
+                                </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8 offset-lg-2">
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">
+                            Upload your training set
+                        </strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <div class="col col-md-3">
+                                <label for="file_input" class=" form-control-label">File input</label>
+                            </div>
+                            <div class="col-12 col-md-9">
+                                <input type="file" id="file_input" name="fileinp" class="form-control-file">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 offset-lg-3">
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">
+                            Train neural network
+                        </strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 offset-md-4">
+                                <button type="button" id="train_button" class="btn btn-info" disabled>
+                                    Train network
+                                </button>
+                            </div>
+                            <div class="col-md-4 offset-md-3">
+                                <button type="button" id="train_other_button" class="btn btn-success" hidden>
+                                    Train another network
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-8 offset-lg-2">
-            <div class="card">
-                <div class="card-header">
-                    <strong class="card-title">Set the nodes and activation function for each layer</strong>
-                </div>
-                <div class="card-body">
-                    <table id="node-table" class="table table-striped table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Layer</th>
-                                    <th>Number of nodes</th>
-                                    <th>Activation function</th>
-                                </tr>
-                            </thead>
-                            <tfoot>
-                                <tr>
-                                    <th>Layer</th>
-                                    <th>Number of nodes</th>
-                                    <th>Activation function</th>
-                                </tr>
-                            </tfoot>
-                    </table>
-                </div>
+        <div class="row">
+            <div class="col-md-1">
+                <label class="form-control-label" id="label_result_area" for="result_area" hidden> Results </label>
             </div>
-        </div>
-        <div class="col-lg-6 offset-lg-3">
-            <div class="card">
-                <div class="card-header">
-                    <strong class="card-title">
-                        Train neural network
-                    </strong>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 offset-md-4">
-                            <button type="button" id="train_button" class="btn btn-info" disabled>
-                                Train network
-                            </button>
-                        </div>
-                        <div class="col-md-4 offset-md-3">
-                            <button type="button" id="train_other_button" class="btn btn-success" hidden>
-                                Train another network
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-1">
-            <label class="form-control-label" id="label_result_area" for="result_area" hidden> Results </label>
-        </div>
-        <div id="result_div" class="col-md-10" tabindex="1">
+            <div id="result_div" class="col-md-10" tabindex="1">
 
+            </div>
         </div>
-    </div>
+    </form>
 {% endblock %}
 
 {% block js_block %}
@@ -165,7 +184,11 @@
             $('#train_button').prop('hidden', false);
         });
 
-        $('#train_button').on('click', function () {
+        $('#train_button').on('click', function (event) {
+            event.preventDefault();
+
+            var form_data = new FormData();
+
             var num_hidden_layers = $('#num_hid_layers').val();
             var number_epochs = $('#num_epoch').val();
             var table_nodes = table.$('input').serializeArray();
@@ -189,10 +212,20 @@
                 $('#num_nodes').prop('disabled', true);
                 $('#num_epoch').prop('disabled', true);
 
+                form_data.append("layers", num_hidden_layers);
+                form_data.append("epochs", number_epochs);
+                form_data.append("act_func", layers_activation_functions);
+                form_data.append("nodes", nodes);
+                //form_data.append("img_set", $(this)[0]);
+
                 $.ajax({
-                    data:{'layers': num_hidden_layers, 'nodes': JSON.stringify(nodes) ,'epochs': number_epochs,
-                        'act_func': JSON.stringify(layers_activation_functions)},
+                    data: form_data,
                     url:"{% url 'execute_nn_training' %}",
+                    type: "POST",
+                    method: "POST",
+                    cache: false,
+                    contentType: false,
+                    processData: false,
                     success: function (data) {
                         var json = JSON.parse(data);
                         $('#label_result_area').prop('hidden', false);
@@ -205,7 +238,6 @@
                         $('#train_button').prop('hidden', true);
                         $('#train_other_button').prop('hidden', false);
                     },
-                    dataType: "json",
                     error: function () {
                         alert("There was an error in the server");
                     }

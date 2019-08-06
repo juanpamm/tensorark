@@ -184,8 +184,7 @@
             $('#train_button').prop('hidden', false);
         });
 
-        $('#train_button').on('click', function (event) {
-            event.preventDefault();
+        $('#train_button').on('click', function () {
 
             var form_data = new FormData();
 
@@ -214,15 +213,39 @@
 
                 form_data.append("layers", num_hidden_layers);
                 form_data.append("epochs", number_epochs);
-                form_data.append("act_func", layers_activation_functions);
-                form_data.append("nodes", nodes);
+                form_data.append("act_func", JSON.stringify(layers_activation_functions));
+                form_data.append("nodes", JSON.stringify(nodes));
+
+                console.log(form_data.get("nodes"));
                 //form_data.append("img_set", $(this)[0]);
+                $.ajaxSetup({
+                     beforeSend: function(xhr, settings) {
+                         function getCookie(name) {
+                             var cookieValue = null;
+                             if (document.cookie && document.cookie != '') {
+                                 var cookies = document.cookie.split(';');
+                                 for (var i = 0; i < cookies.length; i++) {
+                                     var cookie = jQuery.trim(cookies[i]);
+                                     // Does this cookie string begin with the name we want?
+                                     if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                         break;
+                                     }
+                                 }
+                             }
+                             return cookieValue;
+                         }
+                         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                             // Only send the token to relative URLs i.e. locally.
+                             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+                         }
+                     }
+                });
 
                 $.ajax({
-                    data: form_data,
-                    url:"{% url 'execute_nn_training' %}",
                     type: "POST",
-                    method: "POST",
+                    url:"{% url 'execute_nn_training' %}",
+                    data: form_data,
                     cache: false,
                     contentType: false,
                     processData: false,

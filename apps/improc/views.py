@@ -213,13 +213,15 @@ def train_neural_network(nodes_hl, num_layers, num_epochs, act_function):
 
 
 def execute_nn_training(request):
-    layers = int(request.GET.get('layers'))
-    nodes = json.loads(request.GET.get('nodes'))
+    layers = request.GET.get('layers')
+    nodes = request.GET.get('nodes')
     activation_functions = request.GET.get('act_func')
-    epochs = int(request.GET.get('epochs'))
+    epochs = request.GET.get('epochs')
 
-    for i in range(len(nodes)):
-        nodes[i] = int(nodes[i])
+    #for i in range(len(nodes)):
+    #    nodes[i] = int(nodes[i])
+    print(json.dumps(nodes))
+    print(activation_functions)
 
     results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 

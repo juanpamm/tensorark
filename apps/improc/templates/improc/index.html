@@ -215,9 +215,10 @@
                 form_data.append("epochs", number_epochs);
                 form_data.append("act_func", JSON.stringify(layers_activation_functions));
                 form_data.append("nodes", JSON.stringify(nodes));
+                form_data.append("file", $('#file_input')[0].files[0]);
 
-                console.log(form_data.get("nodes"));
-                //form_data.append("img_set", $(this)[0]);
+                console.log(form_data.get("file"));
+
                 $.ajaxSetup({
                      beforeSend: function(xhr, settings) {
                          function getCookie(name) {

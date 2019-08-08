@@ -1,3 +1,5 @@
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.shortcuts import render
 from django.http import JsonResponse
 import json
@@ -213,15 +215,15 @@ def train_neural_network(nodes_hl, num_layers, num_epochs, act_function):
 
 
 def execute_nn_training(request):
-    layers = request.GET.get('layers')
-    nodes = request.GET.get('nodes')
-    activation_functions = request.GET.get('act_func')
-    epochs = request.GET.get('epochs')
+    file = request.FILES['file']
+    default_storage.save(file.name, file)
+    layers = int(request.POST.get('layers'))
+    nodes = json.loads(request.POST.get('nodes'))
+    activation_functions = json.loads(request.POST.get('act_func'))
+    epochs = int(request.POST.get('epochs'))
 
-    #for i in range(len(nodes)):
-    #    nodes[i] = int(nodes[i])
-    print(json.dumps(nodes))
-    print(activation_functions)
+    for i in range(len(nodes)):
+        nodes[i] = int(nodes[i])
 
     results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 

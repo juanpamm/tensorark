@@ -6,7 +6,11 @@ import json
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+from keras import backend
 from keras.datasets import fashion_mnist
+
+graph = tf.Graph()
+graph.clear_collection(graph)
 
 
 def index(request):
@@ -26,13 +30,14 @@ def add_layers_to_network(model, nodes, activation_func):
         model.add(keras.layers.Dense(nodes, activation=tf.nn.softmax))
 
 
-def build_neural_network(layers, nodes, act_functions):
+def build_neural_network(nlayers, nodes, act_functions):
+
     model = keras.Sequential([
         keras.layers.Flatten(input_shape=(28, 28))
     ])
 
-    for i in range(layers):
-        if i == (layers - 1):
+    for i in range(nlayers):
+        if i == (nlayers - 1):
             add_layers_to_network(model, 10, 'softmax')
         else:
             add_layers_to_network(model, nodes[i], act_functions[i])
@@ -45,32 +50,33 @@ def build_neural_network(layers, nodes, act_functions):
 
 
 def train_neural_network_v2(layers, nodes, act_functions, epochs):
-    fashion_mnist_set = fashion_mnist
+    with graph.as_default():
+        fashion_mnist_set = fashion_mnist
 
-    (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
+        (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
 
-    class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
-                   'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+        class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+                       'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
-    train_images = train_images / 255.0
+        train_images = train_images / 255.0
 
-    test_images = test_images / 255.0
+        test_images = test_images / 255.0
 
-    model = build_neural_network(layers, nodes, act_functions)
+        model = build_neural_network(layers, nodes, act_functions)
 
-    model.fit(train_images, train_labels, epochs=epochs)
+        model.fit(train_images, train_labels, epochs=epochs)
 
-    test_loss, test_acc = model.evaluate(test_images, test_labels)
+        test_loss, test_acc = model.evaluate(test_images, test_labels)
 
-    print('Test accuracy:', test_acc)
+        print('Test accuracy:', test_acc)
 
-    predictions = model.predict(test_images)
+        predictions = model.predict(test_images)
 
-    print(predictions[0])
+        print(predictions[0])
 
-    print(np.argmax(predictions[0]))
+        print(np.argmax(predictions[0]))
 
-    print(class_names[int(np.argmax(predictions[0]))])
+        print(class_names[int(np.argmax(predictions[0]))])
 
     return {"accuracy": test_acc, "predictions": predictions, "first_predict": class_names[int(np.argmax(predictions[0]))]}
 

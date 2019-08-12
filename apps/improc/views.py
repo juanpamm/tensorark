@@ -232,9 +232,10 @@ def execute_nn_training(request):
         nodes[i] = int(nodes[i])
 
     mroot = MEDIA_ROOT.replace("\\", "/")
-    path_to_file = mroot + '/zip_files/' + file.name
-    path_to_extract = mroot + '/zip_files/'
+    path_to_file = mroot + '/' + file.name
+    path_to_extract = mroot
     print(path_to_file)
+    print(path_to_extract)
 
     with zipfile.ZipFile(path_to_file, 'r') as zip_file:
         zip_file.extractall(path_to_extract)

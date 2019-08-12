@@ -2,7 +2,8 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.shortcuts import render
 from django.http import JsonResponse
-from tensorark.settings import MEDIA_URL, MEDIA_ROOT
+from tensorark.settings import MEDIA_ROOT
+from utils.utils import *
 import json
 import zipfile
 import numpy as np
@@ -231,14 +232,10 @@ def execute_nn_training(request):
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
 
-    mroot = MEDIA_ROOT.replace("\\", "/")
-    path_to_file = mroot + '/' + file.name
-    path_to_extract = mroot
-    print(path_to_file)
-    print(path_to_extract)
+    file_extraction_manager(MEDIA_ROOT, file)
 
-    with zipfile.ZipFile(path_to_file, 'r') as zip_file:
-        zip_file.extractall(path_to_extract)
+    # extracted_file_path = MEDIA_ROOT + '/' + file.name.split('.')[0]
+    # print(extracted_file_path)
 
     results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 

@@ -48,6 +48,7 @@
 #          c. python convert_to_mnist_format.py notMNIST_small train 0
 #          d. python convert_to_mnist_format.py notMNIST_small train
 #
+import zipfile
 
 import numpy
 import imageio
@@ -210,3 +211,15 @@ def convert_image_set(parameters):
         write_imagedata(trainImagedata, trainImagePath)
         write_labeldata(testLabeldata, testLabelPath)
         write_imagedata(testImagedata, testImagePath)
+
+
+def file_extraction_manager(mediar, file):
+    mroot = mediar.replace("\\", "/")
+    path_to_file = mroot + '/' + file.name
+    path_to_extract = mroot
+
+    with zipfile.ZipFile(path_to_file, 'r') as zip_file:
+        zip_file.extractall(path_to_extract)
+
+    if os.path.exists(path_to_file):
+        os.remove(path_to_file)

@@ -157,7 +157,7 @@
                 $('#result_div').html('<div class="offset-md-4">' +
                     '<img id="loading_image" class="icon-loading" ' +
                     'src="{% static 'gif/lg.circle-slack-loading-icon.gif' %}" tabindex="1"/></div>');
-                $('#loading_image').focus();
+                $("html, body").animate({ scrollTop: $(document).height() }, 1000);
             });
         });
     </script>
@@ -216,8 +216,6 @@
                 form_data.append("act_func", JSON.stringify(layers_activation_functions));
                 form_data.append("nodes", JSON.stringify(nodes));
                 form_data.append("file", $('#file_input')[0].files[0]);
-
-                console.log(form_data.get("file"));
 
                 $.ajaxSetup({
                      beforeSend: function(xhr, settings) {

@@ -2,7 +2,9 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.shortcuts import render
 from django.http import JsonResponse
+from tensorark.settings import MEDIA_URL, MEDIA_ROOT
 import json
+import zipfile
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -10,8 +12,6 @@ from keras import backend
 from keras.datasets import fashion_mnist
 
 graph = tf.Graph()
-graph.clear_collection(graph)
-
 
 def index(request):
     return render(request, 'improc/index.html')
@@ -230,6 +230,14 @@ def execute_nn_training(request):
 
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
+
+    mroot = MEDIA_ROOT.replace("\\", "/")
+    path_to_file = mroot + '/zip_files/' + file.name
+    path_to_extract = mroot + '/zip_files/'
+    print(path_to_file)
+
+    with zipfile.ZipFile(path_to_file, 'r') as zip_file:
+        zip_file.extractall(path_to_extract)
 
     results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 

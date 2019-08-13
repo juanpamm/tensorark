@@ -68,13 +68,13 @@ trainImagePath = dstPath+"/train-images-idx3-ubyte"
 
 
 def get_subdir(folder):
-    listDir = None
+    list_dir = None
     for root, dirs, files in os.walk(folder):
         if not dirs == []:
-            listDir = dirs
+            list_dir = dirs
             break
-    listDir.sort()
-    return listDir
+    list_dir.sort()
+    return list_dir
 
 
 def get_labels_and_files(folder, number=0):
@@ -86,9 +86,9 @@ def get_labels_and_files(folder, number=0):
         filelists.append(filelist)
         dirname = os.path.join(folder, subdir[label])
         for file in os.listdir(dirname):
-            if (file.endswith('.png')):
+            if file.endswith('.png'):
                 fullname = os.path.join(dirname, file)
-                if (os.path.getsize(fullname) > 0):
+                if os.path.getsize(fullname) > 0:
                     filelist.append(fullname)
                 else:
                     print('file ' + fullname + ' is empty')
@@ -99,38 +99,38 @@ def get_labels_and_files(folder, number=0):
     # Take the specified number of items for each label and
     # build them into an array of (label, filename) pairs
     # Since we seeded the RNG, we should get the same sample each run
-    labelsAndFiles = []
+    labels_and_files = []
     for label in range(0, len(subdir)):
         count = number if number > 0 else len(filelists[label])
         filelist = random.sample(filelists[label], count)
         for filename in filelist:
-            labelsAndFiles.append((label, filename))
+            labels_and_files.append((label, filename))
 
-    return labelsAndFiles
+    return labels_and_files
 
 
-def make_arrays(labelsAndFiles, ratio):
+def make_arrays(labels_and_files, ratio):
     global height, width
     images = []
     labels = []
-    imShape = imageio.imread(labelsAndFiles[0][1]).shape
-    if len(imShape) > 2:
-        height, width, channels = imShape
+    im_shape = imageio.imread(labels_and_files[0][1]).shape
+    if len(im_shape) > 2:
+        height, width, channels = im_shape
     else:
-        height, width = imShape
+        height, width = im_shape
         channels = 1
-    for i in range(0, len(labelsAndFiles)):
+    for i in range(0, len(labels_and_files)):
         # display progress, since this can take a while
         if i % 100 == 0:
             sys.stdout.write("\r%d%% complete" %
-                             ((i * 100) / len(labelsAndFiles)))
+                             ((i * 100) / len(labels_and_files)))
             sys.stdout.flush()
 
-        filename = labelsAndFiles[i][1]
+        filename = labels_and_files[i][1]
         try:
             image = imageio.imread(filename)
             images.append(image)
-            labels.append(labelsAndFiles[i][0])
+            labels.append(labels_and_files[i][0])
         except:
             # If this happens we won't have the requested number
             print("\nCan't read image file " + filename)
@@ -142,30 +142,30 @@ def make_arrays(labelsAndFiles, ratio):
     else:
         ratio = float(ratio) / 100
     count = len(images)
-    trainNum = int(count * (1 - ratio))
-    testNum = count - trainNum
+    train_num = int(count * (1 - ratio))
+    test_num = count - train_num
     if channels > 1:
-        trainImagedata = numpy.zeros(
-            (trainNum, height, width, channels), dtype=numpy.uint8)
-        testImagedata = numpy.zeros(
-            (testNum, height, width, channels), dtype=numpy.uint8)
+        train_imagedata = numpy.zeros(
+            (train_num, height, width, channels), dtype=numpy.uint8)
+        test_imagedata = numpy.zeros(
+            (test_num, height, width, channels), dtype=numpy.uint8)
     else:
-        trainImagedata = numpy.zeros(
-            (trainNum, height, width), dtype=numpy.uint8)
-        testImagedata = numpy.zeros(
-            (testNum, height, width), dtype=numpy.uint8)
-    trainLabeldata = numpy.zeros(trainNum, dtype=numpy.uint8)
-    testLabeldata = numpy.zeros(testNum, dtype=numpy.uint8)
+        train_imagedata = numpy.zeros(
+            (train_num, height, width), dtype=numpy.uint8)
+        test_imagedata = numpy.zeros(
+            (test_num, height, width), dtype=numpy.uint8)
+    train_labeldata = numpy.zeros(train_num, dtype=numpy.uint8)
+    test_labeldata = numpy.zeros(test_num, dtype=numpy.uint8)
 
-    for i in range(trainNum):
-        trainImagedata[i] = images[i]
-        trainLabeldata[i] = labels[i]
+    for i in range(train_num):
+        train_imagedata[i] = images[i]
+        train_labeldata[i] = labels[i]
 
-    for i in range(0, testNum):
-        testImagedata[i] = images[trainNum + i]
-        testLabeldata[i] = labels[trainNum + i]
+    for i in range(0, test_num):
+        test_imagedata[i] = images[train_num + i]
+        test_labeldata[i] = labels[train_num + i]
     print("\n")
-    return trainImagedata, trainLabeldata, testImagedata, testLabeldata
+    return train_imagedata, train_labeldata, test_imagedata, test_labeldata
 
 
 def write_labeldata(labeldata, outputfile):
@@ -192,25 +192,25 @@ def convert_image_set(parameters):
     if not os.path.exists(dstPath):
         os.makedirs(dstPath)
     if len(parameters) is 3:
-        labelsAndFiles = get_labels_and_files(parameters[1])
+        labels_and_files = get_labels_and_files(parameters[1])
     elif len(parameters) is 4:
-        labelsAndFiles = get_labels_and_files(parameters[1], int(parameters[3]))
-    random.shuffle(labelsAndFiles)
+        labels_and_files = get_labels_and_files(parameters[1], int(parameters[3]))
+    random.shuffle(labels_and_files)
 
-    trainImagedata, trainLabeldata, testImagedata, testLabeldata = make_arrays(
-        labelsAndFiles, parameters[2])
+    train_image_data, train_label_data, test_image_data, test_label_data = make_arrays(
+        labels_and_files, parameters[2])
 
     if parameters[2] == 'train':
-        write_labeldata(trainLabeldata, trainLabelPath)
-        write_imagedata(trainImagedata, trainImagePath)
+        write_labeldata(train_label_data, trainLabelPath)
+        write_imagedata(train_image_data, trainImagePath)
     elif parameters[2] == 'test':
-        write_labeldata(testLabeldata, testLabelPath)
-        write_imagedata(testImagedata, testImagePath)
+        write_labeldata(test_label_data, testLabelPath)
+        write_imagedata(test_image_data, testImagePath)
     else:
-        write_labeldata(trainLabeldata, trainLabelPath)
-        write_imagedata(trainImagedata, trainImagePath)
-        write_labeldata(testLabeldata, testLabelPath)
-        write_imagedata(testImagedata, testImagePath)
+        write_labeldata(train_label_data, trainLabelPath)
+        write_imagedata(train_image_data, trainImagePath)
+        write_labeldata(test_label_data, testLabelPath)
+        write_imagedata(test_image_data, testImagePath)
 
 
 def file_extraction_manager(mediar, file):

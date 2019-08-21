@@ -52,7 +52,6 @@ import zipfile
 
 import numpy
 import imageio
-import glob
 import sys
 import os
 import random
@@ -216,10 +215,27 @@ def convert_image_set(parameters):
 def file_extraction_manager(mediar, file):
     mroot = mediar.replace("\\", "/")
     path_to_file = mroot + '/' + file.name
-    path_to_extract = mroot
 
     with zipfile.ZipFile(path_to_file, 'r') as zip_file:
-        zip_file.extractall(path_to_extract)
+        zip_file.extractall(mroot)
 
     if os.path.exists(path_to_file):
         os.remove(path_to_file)
+
+
+def get_last_modified_dir(mediar):
+    tmp_date = 0
+    tmp_position = 0
+    list_dirs = os.listdir(mediar)
+
+    for i in range(len(list_dirs)):
+        if os.path.isdir(os.path.join(mediar, list_dirs[i])) is True:
+            if i == 0:
+                tmp_date = os.path.getmtime(os.path.join(mediar, list_dirs[i]))
+                tmp_position = i
+            elif i != 0:
+                if tmp_date < os.path.getmtime(os.path.join(mediar, list_dirs[i])):
+                    tmp_date = os.path.getmtime(os.path.join(mediar, list_dirs[i]))
+                    tmp_position = i
+
+    return os.path.join(mediar, list_dirs[tmp_position])

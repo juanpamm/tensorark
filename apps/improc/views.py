@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from tensorark.settings import MEDIA_ROOT
 from utils.utils import *
 import json
-import zipfile
+import os.path
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -233,9 +233,6 @@ def execute_nn_training(request):
         nodes[i] = int(nodes[i])
 
     file_extraction_manager(MEDIA_ROOT, file)
-
-    # extracted_file_path = MEDIA_ROOT + '/' + file.name.split('.')[0]
-    # print(extracted_file_path)
 
     results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 

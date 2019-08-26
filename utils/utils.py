@@ -49,7 +49,8 @@
 #          d. python convert_to_mnist_format.py notMNIST_small train
 #
 import zipfile
-
+import gzip
+import shutil
 import numpy
 import imageio
 import sys
@@ -178,10 +179,6 @@ def write_imagedata(imagedata, outputfile):
 
 
 def convert_image_set(parameters, dst_path):
-    # Uncomment the line below if you want to seed the random
-    # number generator in the same way I did to produce the
-    # specific data files in this repo.
-    # random.seed(int("notMNIST", 36))
     train_label_path = dst_path + "/train-labels-idx1-ubyte"
     train_image_path = dst_path + "/train-images-idx3-ubyte"
     test_label_path = dst_path + "/t10k-labels-idx1-ubyte"
@@ -214,11 +211,10 @@ def convert_image_set(parameters, dst_path):
 
 
 def file_extraction_manager(mediar, file):
-    mroot = mediar.replace("\\", "/")
-    path_to_file = mroot + '/' + file.name
+    path_to_file = os.path.join(mediar, file.name)
 
     with zipfile.ZipFile(path_to_file, 'r') as zip_file:
-        zip_file.extractall(mroot)
+        zip_file.extractall(mediar)
 
     if os.path.exists(path_to_file):
         os.remove(path_to_file)
@@ -240,3 +236,13 @@ def get_last_modified_dir(mediar):
                     tmp_position = i
 
     return os.path.join(mediar, list_dirs[tmp_position])
+
+
+def gzip_all_files_in_dir(path_to_dir):
+    list_dir = os.listdir(path_to_dir)
+
+    for i in range(len(list_dir)):
+        if os.path.isfile(os.path.join(path_to_dir, list_dir[i])) is True:
+            with open(os.path.join(path_to_dir, list_dir[i]), 'rb') as file_opened:
+                with gzip.open(os.path.join(path_to_dir, list_dir[i]) + '.gz', 'wb') as file_wr:
+                    shutil.copyfileobj(file_opened, file_wr)

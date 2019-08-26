@@ -235,11 +235,14 @@ def execute_nn_training(request):
         nodes[i] = int(nodes[i])
 
     file_extraction_manager(MEDIA_ROOT, file)
+
     path_for_train_set = os.path.join(get_last_modified_dir(MEDIA_ROOT), 'training')
     path_for_test_set = os.path.join(get_last_modified_dir(MEDIA_ROOT), 'testing')
 
-    convert_image_set([path_for_train_set, 'train'], dst_path)
-    convert_image_set([path_for_test_set, 'test'], dst_path)
+    #convert_image_set([path_for_train_set, 'train'], dst_path)
+    #convert_image_set([path_for_test_set, 'test'], dst_path)
+
+    #gzip_all_files_in_dir(dst_path)
 
     results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 

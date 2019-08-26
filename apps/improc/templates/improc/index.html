@@ -167,8 +167,8 @@
         var table = $("#node-table").DataTable();
 
         function reset_all(){
-            $('#num_hid_layers').val("");
-            $('#num_epoch').val("");
+            $('#num_hid_layers').val('');
+            $('#num_epoch').val('');
             table.rows().remove().draw();
             $('#result_div').html('');
             $('#label_result_area').prop('hidden', true);
@@ -176,6 +176,7 @@
             $('#num_hid_layers').prop('disabled', false);
             $('#num_nodes').prop('disabled', false);
             $('#num_epoch').prop('disabled', false);
+            $('#file_input').val('');
         }
 
         $('#train_other_button').on('click', function () {

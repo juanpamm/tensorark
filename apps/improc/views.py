@@ -14,6 +14,7 @@ from keras.datasets import fashion_mnist
 
 graph = tf.Graph()
 
+
 def index(request):
     return render(request, 'improc/index.html')
 
@@ -228,11 +229,17 @@ def execute_nn_training(request):
     nodes = json.loads(request.POST.get('nodes'))
     activation_functions = json.loads(request.POST.get('act_func'))
     epochs = int(request.POST.get('epochs'))
+    dst_path = os.path.join(MEDIA_ROOT, 'converted_set')
 
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
 
     file_extraction_manager(MEDIA_ROOT, file)
+    path_for_train_set = os.path.join(get_last_modified_dir(MEDIA_ROOT), 'training')
+    path_for_test_set = os.path.join(get_last_modified_dir(MEDIA_ROOT), 'testing')
+
+    convert_image_set([path_for_train_set, 'train'], dst_path)
+    convert_image_set([path_for_test_set, 'test'], dst_path)
 
     results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 

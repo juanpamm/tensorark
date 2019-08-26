@@ -59,12 +59,6 @@ import random
 height = 0
 width = 0
 
-dstPath = "convert_MNIST"
-testLabelPath = dstPath+"/t10k-labels-idx1-ubyte"
-testImagePath = dstPath+"/t10k-images-idx3-ubyte"
-trainLabelPath = dstPath+"/train-labels-idx1-ubyte"
-trainImagePath = dstPath+"/train-images-idx3-ubyte"
-
 
 def get_subdir(folder):
     list_dir = None
@@ -143,6 +137,7 @@ def make_arrays(labels_and_files, ratio):
     count = len(images)
     train_num = int(count * (1 - ratio))
     test_num = count - train_num
+
     if channels > 1:
         train_imagedata = numpy.zeros(
             (train_num, height, width, channels), dtype=numpy.uint8)
@@ -182,34 +177,40 @@ def write_imagedata(imagedata, outputfile):
         f.write(imagedata.tobytes())
 
 
-def convert_image_set(parameters):
-    global idxLabelPath, idxImagePath
+def convert_image_set(parameters, dst_path):
     # Uncomment the line below if you want to seed the random
     # number generator in the same way I did to produce the
     # specific data files in this repo.
     # random.seed(int("notMNIST", 36))
-    if not os.path.exists(dstPath):
-        os.makedirs(dstPath)
-    if len(parameters) is 3:
-        labels_and_files = get_labels_and_files(parameters[1])
-    elif len(parameters) is 4:
-        labels_and_files = get_labels_and_files(parameters[1], int(parameters[3]))
+    train_label_path = dst_path + "/train-labels-idx1-ubyte"
+    train_image_path = dst_path + "/train-images-idx3-ubyte"
+    test_label_path = dst_path + "/t10k-labels-idx1-ubyte"
+    test_image_path = dst_path + "/t10k-images-idx3-ubyte"
+
+    if not os.path.exists(dst_path):
+        os.makedirs(dst_path)
+    if len(parameters) is 2:
+        labels_and_files = get_labels_and_files(parameters[0])
+    elif len(parameters) is 3:
+        labels_and_files = get_labels_and_files(parameters[0], int(parameters[2]))
     random.shuffle(labels_and_files)
 
     train_image_data, train_label_data, test_image_data, test_label_data = make_arrays(
-        labels_and_files, parameters[2])
+        labels_and_files, parameters[1])
 
-    if parameters[2] == 'train':
-        write_labeldata(train_label_data, trainLabelPath)
-        write_imagedata(train_image_data, trainImagePath)
-    elif parameters[2] == 'test':
-        write_labeldata(test_label_data, testLabelPath)
-        write_imagedata(test_image_data, testImagePath)
+    if parameters[1] == 'train':
+
+        write_labeldata(train_label_data, train_label_path)
+        write_imagedata(train_image_data, train_image_path)
+    elif parameters[1] == 'test':
+
+        write_labeldata(test_label_data, test_label_path)
+        write_imagedata(test_image_data, test_image_path)
     else:
-        write_labeldata(train_label_data, trainLabelPath)
-        write_imagedata(train_image_data, trainImagePath)
-        write_labeldata(test_label_data, testLabelPath)
-        write_imagedata(test_image_data, testImagePath)
+        write_labeldata(train_label_data, train_label_path)
+        write_imagedata(train_image_data, train_image_path)
+        write_labeldata(test_label_data, test_label_path)
+        write_imagedata(test_image_data, test_image_path)
 
 
 def file_extraction_manager(mediar, file):

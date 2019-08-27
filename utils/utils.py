@@ -246,3 +246,4 @@ def gzip_all_files_in_dir(path_to_dir):
             with open(os.path.join(path_to_dir, list_dir[i]), 'rb') as file_opened:
                 with gzip.open(os.path.join(path_to_dir, list_dir[i]) + '.gz', 'wb') as file_wr:
                     shutil.copyfileobj(file_opened, file_wr)
+            os.remove(os.path.join(path_to_dir, list_dir[i]))

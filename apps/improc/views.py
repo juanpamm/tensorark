@@ -1,15 +1,13 @@
-from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.shortcuts import render
 from django.http import JsonResponse
 from tensorark.settings import MEDIA_ROOT
-from utils.utils import *
+from utils import utils
 import json
 import os.path
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from keras import backend
 from keras.datasets import fashion_mnist
 
 graph = tf.Graph()
@@ -33,9 +31,11 @@ def add_layers_to_network(model, nodes, activation_func):
 
 
 def build_neural_network(nlayers, nodes, act_functions):
+    print('Height: ', utils.height)
+    print('Width', utils.width)
 
     model = keras.Sequential([
-        keras.layers.Flatten(input_shape=(28, 28))
+        keras.layers.Flatten(input_shape=(utils.width, utils.height))
     ])
 
     for i in range(nlayers):
@@ -234,15 +234,15 @@ def execute_nn_training(request):
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
 
-    file_extraction_manager(MEDIA_ROOT, file)
+    utils.file_extraction_manager(MEDIA_ROOT, file)
 
-    path_for_train_set = os.path.join(get_last_modified_dir(MEDIA_ROOT), 'training')
-    path_for_test_set = os.path.join(get_last_modified_dir(MEDIA_ROOT), 'testing')
+    path_for_train_set = os.path.join(utils.get_last_modified_dir(MEDIA_ROOT), 'training')
+    path_for_test_set = os.path.join(utils.get_last_modified_dir(MEDIA_ROOT), 'testing')
 
-    convert_image_set([path_for_train_set, 'train'], dst_path)
-    convert_image_set([path_for_test_set, 'test'], dst_path)
+    utils.convert_image_set([path_for_train_set, 'train'], dst_path)
+    utils.convert_image_set([path_for_test_set, 'test'], dst_path)
 
-    gzip_all_files_in_dir(dst_path)
+    utils.gzip_all_files_in_dir(dst_path)
 
     results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 

@@ -59,6 +59,7 @@ import random
 
 height = 0
 width = 0
+# class_names = []
 
 
 def get_subdir(folder):

@@ -59,7 +59,7 @@ import random
 
 height = 0
 width = 0
-# class_names = []
+class_names = []
 
 
 def get_subdir(folder):
@@ -248,3 +248,10 @@ def gzip_all_files_in_dir(path_to_dir):
                 with gzip.open(os.path.join(path_to_dir, list_dir[i]) + '.gz', 'wb') as file_wr:
                     shutil.copyfileobj(file_opened, file_wr)
             os.remove(os.path.join(path_to_dir, list_dir[i]))
+
+
+def set_name_classes(path):
+    list_dir = get_subdir(path)
+    for label in range(0, len(list_dir)):
+        dirname = list_dir[label]
+        class_names.append(dirname)

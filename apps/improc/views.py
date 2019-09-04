@@ -57,8 +57,8 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs):
 
         (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
 
-        class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
-                       'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+        classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+                   'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
         train_images = train_images / 255.0
 
@@ -78,9 +78,9 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs):
 
         print(np.argmax(predictions[0]))
 
-        print(class_names[int(np.argmax(predictions[0]))])
+        print(classes[int(np.argmax(predictions[0]))])
 
-    return {"accuracy": test_acc, "predictions": predictions, "first_predict": class_names[int(np.argmax(predictions[0]))]}
+    return {"accuracy": test_acc, "predictions": predictions, "first_predict": classes[int(np.argmax(predictions[0]))]}
 
 
 '''
@@ -243,6 +243,8 @@ def execute_nn_training(request):
     utils.convert_image_set([path_for_test_set, 'test'], dst_path)
 
     utils.gzip_all_files_in_dir(dst_path)
+
+    utils.set_name_classes(path_for_train_set)
 
     results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
 

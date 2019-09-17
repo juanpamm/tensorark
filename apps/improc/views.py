@@ -1,13 +1,17 @@
+from django.core.files.storage import default_storage
 from django.shortcuts import render
 from django.http import JsonResponse
+from tensorark.settings import MEDIA_ROOT
+from utils import utils
 import json
+import os.path
 import numpy as np
-import matplotlib.pyplot as plt
 import tensorflow as tf
+# import matplotlib.pyplot as plt
 from tensorflow import keras
-from keras.layers import Dense
-from tensorflow.examples.tutorials.mnist import input_data
-from keras.datasets import fashion_mnist
+# from keras.datasets import fashion_mnist
+
+graph = tf.Graph()
 
 
 def index(request):
@@ -27,14 +31,17 @@ def add_layers_to_network(model, nodes, activation_func):
         model.add(keras.layers.Dense(nodes, activation=tf.nn.softmax))
 
 
-def build_neural_network(layers, nodes, act_functions):
+def build_neural_network(nlayers, nodes, act_functions):
+    print('Height: ', utils.height)
+    print('Width', utils.width)
+
     model = keras.Sequential([
-        keras.layers.Flatten(input_shape=(28, 28))
+        keras.layers.Flatten(input_shape=(utils.width, utils.height))
     ])
 
-    for i in range(layers):
-        if i == (layers - 1):
-            add_layers_to_network(model, 10, 'softmax')
+    for i in range(nlayers):
+        if i == (nlayers - 1):
+            add_layers_to_network(model, len(utils.class_names), 'softmax')
         else:
             add_layers_to_network(model, nodes[i], act_functions[i])
 
@@ -45,35 +52,64 @@ def build_neural_network(layers, nodes, act_functions):
     return model
 
 
-def train_neural_network_v2(layers, nodes, act_functions, epochs):
-    fashion_mnist_set = fashion_mnist
+def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path):
+    with graph.as_default():
+        # fashion_mnist_set = fashion_mnist
 
-    (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
+        # (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
 
-    class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
-                   'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+        (train_images, train_labels), (test_images, test_labels) = utils.load_data(dst_path)
 
-    train_images = train_images / 255.0
+        # classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+        #               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
-    test_images = test_images / 255.0
+        classes = utils.class_names
+        print(classes)
 
-    model = build_neural_network(layers, nodes, act_functions)
+        train_images = train_images / 255.0
+        test_images = test_images / 255.0
 
-    model.fit(train_images, train_labels, epochs=epochs)
+        model = build_neural_network(layers, nodes, act_functions)
+        model.fit(train_images, train_labels, epochs=epochs)
+        test_loss, test_acc = model.evaluate(test_images, test_labels)
 
-    test_loss, test_acc = model.evaluate(test_images, test_labels)
+        print('Test accuracy:', test_acc)
 
-    print('Test accuracy:', test_acc)
+        predictions = model.predict(test_images)
 
-    predictions = model.predict(test_images)
+        '''
+        plt.figure()
+        plt.imshow(test_images[0])
+        plt.colorbar()
+        plt.grid(False)
+        plt.show()
 
-    print(predictions[0])
+        plt.figure()
+        plt.imshow(test_images[1])
+        plt.colorbar()
+        plt.grid(False)
+        plt.show()
 
-    print(np.argmax(predictions[0]))
+        plt.figure()
+        plt.imshow(test_images[2])
+        plt.colorbar()
+        plt.grid(False)
+        plt.show()
+        '''
 
-    print(class_names[int(np.argmax(predictions[0]))])
+        print(predictions[0])
+        print(np.argmax(predictions[0]))
+        print(classes[int(np.argmax(predictions[0]))])
 
-    return {"accuracy": test_acc, "predictions": predictions, "first_predict": class_names[int(np.argmax(predictions[0]))]}
+        print(predictions[1])
+        print(np.argmax(predictions[1]))
+        print(classes[int(np.argmax(predictions[1]))])
+
+        print(predictions[2])
+        print(np.argmax(predictions[2]))
+        print(classes[int(np.argmax(predictions[2]))])
+
+    return {"accuracy": test_acc, "predictions": predictions, "first_predict": classes[int(np.argmax(predictions[0]))]}
 
 
 '''
@@ -216,15 +252,30 @@ def train_neural_network(nodes_hl, num_layers, num_epochs, act_function):
 
 
 def execute_nn_training(request):
-    layers = int(request.GET.get('layers'))
-    nodes = json.loads(request.GET.get('nodes'))
-    activation_functions = request.GET.get('act_func')
-    epochs = int(request.GET.get('epochs'))
+    file = request.FILES['file']
+    default_storage.save(file.name, file)
+    layers = int(request.POST.get('layers'))
+    nodes = json.loads(request.POST.get('nodes'))
+    activation_functions = json.loads(request.POST.get('act_func'))
+    epochs = int(request.POST.get('epochs'))
+    dst_path = os.path.join(MEDIA_ROOT, 'converted_set')
 
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
 
-    results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
+    utils.file_extraction_manager(MEDIA_ROOT, file)
+
+    path_for_train_set = os.path.join(utils.get_last_modified_dir(MEDIA_ROOT), 'training')
+    path_for_test_set = os.path.join(utils.get_last_modified_dir(MEDIA_ROOT), 'testing')
+
+    utils.convert_image_set([path_for_train_set, 'train'], dst_path)
+    utils.convert_image_set([path_for_test_set, 'test'], dst_path)
+
+    utils.gzip_all_files_in_dir(dst_path)
+
+    utils.set_name_classes(path_for_train_set)
+
+    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, dst_path)
 
     acc_percentage = results.get("accuracy") * 100
     st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
@@ -235,4 +286,3 @@ def execute_nn_training(request):
 
     json_data = json.dumps(training_result)
     return JsonResponse(json_data, safe=False)
-

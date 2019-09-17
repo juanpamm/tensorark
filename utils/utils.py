@@ -126,7 +126,7 @@ def make_arrays(labels_and_files, ratio):
             image = imageio.imread(filename)
             images.append(image)
             labels.append(labels_and_files[i][0])
-        except:
+        except OSError:
             # If this happens we won't have the requested number
             print("\nCan't read image file " + filename)
 
@@ -184,6 +184,7 @@ def convert_image_set(parameters, dst_path):
     train_image_path = dst_path + "/train-images-idx3-ubyte"
     test_label_path = dst_path + "/t10k-labels-idx1-ubyte"
     test_image_path = dst_path + "/t10k-images-idx3-ubyte"
+    labels_and_files = []
 
     if not os.path.exists(dst_path):
         os.makedirs(dst_path)
@@ -252,6 +253,28 @@ def gzip_all_files_in_dir(path_to_dir):
 
 def set_name_classes(path):
     list_dir = get_subdir(path)
-    for label in range(0, len(list_dir)):
-        dirname = list_dir[label]
+    for label in list_dir:
+        dirname = label
         class_names.append(dirname)
+
+
+def load_data(dst_path):
+    files = os.listdir(dst_path)
+    paths = []
+
+    for fname in files:
+        paths.append(os.path.join(dst_path, fname))
+
+    with gzip.open(paths[3], 'rb') as lbpath:
+        y_train = numpy.frombuffer(lbpath.read(), numpy.uint8, offset=8)
+
+    with gzip.open(paths[2], 'rb') as imgpath:
+        x_train = numpy.frombuffer(imgpath.read(), numpy.uint8, offset=16).reshape(len(y_train), 28, 28)
+
+    with gzip.open(paths[1], 'rb') as lbpath:
+        y_test = numpy.frombuffer(lbpath.read(), numpy.uint8, offset=8)
+
+    with gzip.open(paths[0], 'rb') as imgpath:
+        x_test = numpy.frombuffer(imgpath.read(), numpy.uint8, offset=16).reshape(len(y_test), 28, 28)
+
+    return (x_train, y_train), (x_test, y_test)

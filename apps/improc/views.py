@@ -7,8 +7,9 @@ import json
 import os.path
 import numpy as np
 import tensorflow as tf
+# import matplotlib.pyplot as plt
 from tensorflow import keras
-from keras.datasets import fashion_mnist
+# from keras.datasets import fashion_mnist
 
 graph = tf.Graph()
 
@@ -40,7 +41,7 @@ def build_neural_network(nlayers, nodes, act_functions):
 
     for i in range(nlayers):
         if i == (nlayers - 1):
-            add_layers_to_network(model, 10, 'softmax')
+            add_layers_to_network(model, len(utils.class_names), 'softmax')
         else:
             add_layers_to_network(model, nodes[i], act_functions[i])
 
@@ -51,34 +52,62 @@ def build_neural_network(nlayers, nodes, act_functions):
     return model
 
 
-def train_neural_network_v2(layers, nodes, act_functions, epochs):
+def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path):
     with graph.as_default():
-        fashion_mnist_set = fashion_mnist
+        # fashion_mnist_set = fashion_mnist
 
-        (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
+        # (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
 
-        classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
-                   'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+        (train_images, train_labels), (test_images, test_labels) = utils.load_data(dst_path)
+
+        # classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+        #               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+
+        classes = utils.class_names
+        print(classes)
 
         train_images = train_images / 255.0
-
         test_images = test_images / 255.0
 
         model = build_neural_network(layers, nodes, act_functions)
-
         model.fit(train_images, train_labels, epochs=epochs)
-
         test_loss, test_acc = model.evaluate(test_images, test_labels)
 
         print('Test accuracy:', test_acc)
 
         predictions = model.predict(test_images)
 
+        '''
+        plt.figure()
+        plt.imshow(test_images[0])
+        plt.colorbar()
+        plt.grid(False)
+        plt.show()
+
+        plt.figure()
+        plt.imshow(test_images[1])
+        plt.colorbar()
+        plt.grid(False)
+        plt.show()
+
+        plt.figure()
+        plt.imshow(test_images[2])
+        plt.colorbar()
+        plt.grid(False)
+        plt.show()
+        '''
+
         print(predictions[0])
-
         print(np.argmax(predictions[0]))
-
         print(classes[int(np.argmax(predictions[0]))])
+
+        print(predictions[1])
+        print(np.argmax(predictions[1]))
+        print(classes[int(np.argmax(predictions[1]))])
+
+        print(predictions[2])
+        print(np.argmax(predictions[2]))
+        print(classes[int(np.argmax(predictions[2]))])
 
     return {"accuracy": test_acc, "predictions": predictions, "first_predict": classes[int(np.argmax(predictions[0]))]}
 
@@ -246,7 +275,7 @@ def execute_nn_training(request):
 
     utils.set_name_classes(path_for_train_set)
 
-    results = train_neural_network_v2(layers, nodes, activation_functions, epochs)
+    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, dst_path)
 
     acc_percentage = results.get("accuracy") * 100
     st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
@@ -257,4 +286,3 @@ def execute_nn_training(request):
 
     json_data = json.dumps(training_result)
     return JsonResponse(json_data, safe=False)
-

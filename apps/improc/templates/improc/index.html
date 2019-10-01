@@ -57,7 +57,7 @@
             <div class="col-lg-8 offset-lg-2">
                 <div class="card">
                     <div class="card-header">
-                        <strong class="card-title">Set the nodes and activation function for each layer</strong>
+                        <strong class="card-title">Set the nodes and activation function for each hidden layer</strong>
                     </div>
                     <div class="card-body">
                         <table id="node-table" class="table table-striped table-bordered">
@@ -79,7 +79,32 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-8 offset-lg-2">
+            <div class="col-lg-6 offset-lg-3">
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">
+                            Select activation function for the output layer
+                        </strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="afunc_outlay" class="control-label mb-1">
+                                Output layer
+                            </label>
+                            <select id="afunc_outlay" name="act_func_out_lay" class="output_layer"
+                            data-placeholder="Choose an activation function..." disabled>
+                                <option value=""></option>
+                                <option value="relu">Rectified Linear Unit</option>
+                                <option value="sigmoid">Sigmoid</option>
+                                <option value="tanh">Hyperbolic Tangent</option>
+                                <option value="elu">Exponential Linear Unit</option>
+                                <option value="softmax">Softmax</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 offset-lg-3">
                 <div class="card">
                     <div class="card-header">
                         <strong class="card-title">
@@ -159,24 +184,35 @@
                     'src="{% static 'gif/lg.circle-slack-loading-icon.gif' %}" tabindex="1"/></div>');
                 $("html, body").animate({ scrollTop: $(document).height() }, 1000);
             });
+
+            jQuery(".output_layer").chosen({
+                disable_search_threshold: 0,
+                no_results_text: "Oops, nothing found!",
+                width: "100%"
+            });
         });
     </script>
 
     <script>
 
-        var table = $("#node-table").DataTable();
+        var table = $('#node-table').DataTable();
 
         function reset_all(){
-            $('#num_hid_layers').val('');
-            $('#num_epoch').val('');
+            const num_epoch = $('#num_epoch');
+            const num_hid_layers = $('#num_hid_layers');
+            const afunc_outlay = $('#afunc_outlay');
+
             table.rows().remove().draw();
             $('#result_div').html('');
             $('#label_result_area').prop('hidden', true);
-
-            $('#num_hid_layers').prop('disabled', false);
             $('#num_nodes').prop('disabled', false);
-            $('#num_epoch').prop('disabled', false);
             $('#file_input').val('');
+            num_hid_layers.val('');
+            num_hid_layers.prop('disabled', false);
+            num_epoch.val('');
+            num_epoch.prop('disabled', false);
+            afunc_outlay.val('').trigger('chosen:updated');
+            afunc_outlay.prop('disabled', true).trigger('chosen:updated');
         }
 
         $('#train_other_button').on('click', function () {
@@ -186,16 +222,14 @@
         });
 
         $('#train_button').on('click', function () {
-
             var form_data = new FormData();
-
             var num_hidden_layers = $('#num_hid_layers').val();
             var number_epochs = $('#num_epoch').val();
+            var output_act_func = $('#afunc_outlay option:selected').val();
             var table_nodes = table.$('input').serializeArray();
             var table_act_funcs = table.$('select').serializeArray();
             var nodes = [];
             var layers_activation_functions = [];
-
 
             for (let j = 0; j < num_hidden_layers; j++){
                 nodes.push(table_nodes[j].value);
@@ -206,7 +240,6 @@
                 layers_activation_functions.includes('') === true){
                 alert("Please, fill all fields");
             }else{
-
                 $('#train_button').prop('disabled', true);
                 $('#num_hid_layers').prop('disabled', true);
                 $('#num_nodes').prop('disabled', true);
@@ -215,6 +248,7 @@
                 form_data.append("layers", num_hidden_layers);
                 form_data.append("epochs", number_epochs);
                 form_data.append("act_func", JSON.stringify(layers_activation_functions));
+                form_data.append("output_act_func", output_act_func);
                 form_data.append("nodes", JSON.stringify(nodes));
                 form_data.append("file", $('#file_input')[0].files[0]);
 
@@ -280,7 +314,7 @@
             }
             else{
                 $('#train_button').prop('disabled', false);
-
+                $('#afunc_outlay').prop('disabled', false).trigger('chosen:updated');
                 table.rows().remove().draw();
 
                 for (let i = 0; i < layers; i++){
@@ -292,8 +326,9 @@
                                         "<option value=''></option>"  +
                                         "<option value='relu'>Rectified Linear Unit</option>" +
                                         "<option value='sigmoid'>Sigmoid</option>" +
-                                        "<option value='tanh'>Hiperbolic Tangent</option>" +
+                                        "<option value='tanh'>Hyperbolic Tangent</option>" +
                                         "<option value='elu'>Exponential Linear Unit</option>" +
+                                        "<option value='softmax'>Softmax</option>" +
                                     "</select>" ]).draw();
                 }
 

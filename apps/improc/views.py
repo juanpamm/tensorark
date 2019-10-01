@@ -31,7 +31,7 @@ def add_layers_to_network(model, nodes, activation_func):
         model.add(keras.layers.Dense(nodes, activation=tf.nn.softmax))
 
 
-def build_neural_network(nlayers, nodes, act_functions):
+def build_neural_network(nlayers, nodes, act_functions, output_act_func):
     print('Height: ', utils.height)
     print('Width', utils.width)
 
@@ -39,20 +39,20 @@ def build_neural_network(nlayers, nodes, act_functions):
         keras.layers.Flatten(input_shape=(utils.width, utils.height))
     ])
 
+    # Construction of the hidden layers
     for i in range(nlayers):
-        if i == (nlayers - 1):
-            add_layers_to_network(model, len(utils.class_names), 'softmax')
-        else:
-            add_layers_to_network(model, nodes[i], act_functions[i])
+        add_layers_to_network(model, nodes[i], act_functions[i])
+
+    # Construction of the output layer
+    add_layers_to_network(model, len(utils.class_names), output_act_func)
 
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
-
     return model
 
 
-def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path):
+def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, output_act_func):
     with graph.as_default():
         # fashion_mnist_set = fashion_mnist
 
@@ -69,7 +69,7 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path):
         train_images = train_images / 255.0
         test_images = test_images / 255.0
 
-        model = build_neural_network(layers, nodes, act_functions)
+        model = build_neural_network(layers, nodes, act_functions, output_act_func)
         model.fit(train_images, train_labels, epochs=epochs)
         test_loss, test_acc = model.evaluate(test_images, test_labels)
 
@@ -257,6 +257,7 @@ def execute_nn_training(request):
     layers = int(request.POST.get('layers'))
     nodes = json.loads(request.POST.get('nodes'))
     activation_functions = json.loads(request.POST.get('act_func'))
+    output_act_func = request.POST.get('output_act_func')
     epochs = int(request.POST.get('epochs'))
     dst_path = os.path.join(MEDIA_ROOT, 'converted_set')
 
@@ -275,7 +276,7 @@ def execute_nn_training(request):
 
     utils.set_name_classes(path_for_train_set)
 
-    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, dst_path)
+    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, dst_path, output_act_func)
 
     acc_percentage = results.get("accuracy") * 100
     st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)

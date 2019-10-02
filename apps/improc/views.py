@@ -55,14 +55,18 @@ def build_neural_network(nlayers, nodes, act_functions, output_act_func):
 def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, output_act_func):
     with graph.as_default():
         # fashion_mnist_set = fashion_mnist
-
         # (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
-
-        (train_images, train_labels), (test_images, test_labels) = utils.load_data(dst_path)
-
         # classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
         #               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
+        checkpoint_path = os.path.join(MEDIA_ROOT, 'network_saved')
+        if not os.path.exists(checkpoint_path):
+            os.makedirs(checkpoint_path)
+        checkpoint_full_path = os.path.join(checkpoint_path, 'cp.ckpt')
+        checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_full_path,
+                                                                 save_weights_only=True,
+                                                                 verbose=1)
+        (train_images, train_labels), (test_images, test_labels) = utils.load_data(dst_path)
         classes = utils.class_names
         print(classes)
 
@@ -70,11 +74,10 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
         test_images = test_images / 255.0
 
         model = build_neural_network(layers, nodes, act_functions, output_act_func)
-        model.fit(train_images, train_labels, epochs=epochs)
+        model.summary()
+        model.fit(train_images, train_labels, epochs=epochs, callbacks=[checkpoint_callback])
         test_loss, test_acc = model.evaluate(test_images, test_labels)
-
         print('Test accuracy:', test_acc)
-
         predictions = model.predict(test_images)
 
         '''
@@ -96,15 +99,12 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
         plt.grid(False)
         plt.show()
         '''
-
         print(predictions[0])
         print(np.argmax(predictions[0]))
         print(classes[int(np.argmax(predictions[0]))])
-
         print(predictions[1])
         print(np.argmax(predictions[1]))
         print(classes[int(np.argmax(predictions[1]))])
-
         print(predictions[2])
         print(np.argmax(predictions[2]))
         print(classes[int(np.argmax(predictions[2]))])

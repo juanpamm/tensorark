@@ -9,7 +9,6 @@ import numpy as np
 import tensorflow as tf
 # import matplotlib.pyplot as plt
 from tensorflow import keras
-# from keras.datasets import fashion_mnist
 
 graph = tf.Graph()
 
@@ -32,9 +31,6 @@ def add_layers_to_network(model, nodes, activation_func):
 
 
 def build_neural_network(nlayers, nodes, act_functions, output_act_func):
-    print('Height: ', utils.height)
-    print('Width', utils.width)
-
     model = keras.Sequential([
         keras.layers.Flatten(input_shape=(utils.width, utils.height))
     ])
@@ -54,11 +50,8 @@ def build_neural_network(nlayers, nodes, act_functions, output_act_func):
 
 def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, output_act_func):
     with graph.as_default():
-        # fashion_mnist_set = fashion_mnist
-        # (train_images, train_labels), (test_images, test_labels) = fashion_mnist_set.load_data()
-        # classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
-        #               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
+        # Checkpoint for network
         checkpoint_path = os.path.join(MEDIA_ROOT, 'network_saved')
         if not os.path.exists(checkpoint_path):
             os.makedirs(checkpoint_path)
@@ -66,18 +59,21 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
         checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_full_path,
                                                                  save_weights_only=True,
                                                                  verbose=1)
+        # Loading of the train and testing images and labels
         (train_images, train_labels), (test_images, test_labels) = utils.load_data(dst_path)
         classes = utils.class_names
-        print(classes)
 
         train_images = train_images / 255.0
         test_images = test_images / 255.0
 
+        # Construction, training and saving of the neural network
         model = build_neural_network(layers, nodes, act_functions, output_act_func)
-        model.summary()
         model.fit(train_images, train_labels, epochs=epochs, callbacks=[checkpoint_callback])
+        model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
         test_loss, test_acc = model.evaluate(test_images, test_labels)
         print('Test accuracy:', test_acc)
+
+        # Use the test set for prediction
         predictions = model.predict(test_images)
 
         '''
@@ -252,6 +248,7 @@ def train_neural_network(nodes_hl, num_layers, num_epochs, act_function):
 
 
 def execute_nn_training(request):
+    # Variables needed for the training process
     file = request.FILES['file']
     default_storage.save(file.name, file)
     layers = int(request.POST.get('layers'))
@@ -260,24 +257,30 @@ def execute_nn_training(request):
     output_act_func = request.POST.get('output_act_func')
     epochs = int(request.POST.get('epochs'))
     dst_path = os.path.join(MEDIA_ROOT, 'converted_set')
-
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
 
+    # Extraction of the image set loaded by the user
     utils.file_extraction_manager(MEDIA_ROOT, file)
 
+    # Paths to training and testing set
     path_for_train_set = os.path.join(utils.get_last_modified_dir(MEDIA_ROOT), 'training')
     path_for_test_set = os.path.join(utils.get_last_modified_dir(MEDIA_ROOT), 'testing')
 
+    # Image set conversion into MNIST format
     utils.convert_image_set([path_for_train_set, 'train'], dst_path)
     utils.convert_image_set([path_for_test_set, 'test'], dst_path)
 
+    # Gzip compress the files obtained in the conversion
     utils.gzip_all_files_in_dir(dst_path)
 
+    # Set the names for the classes
     utils.set_name_classes(path_for_train_set)
 
+    # Execute function to train the neural network
     results = train_neural_network_v2(layers, nodes, activation_functions, epochs, dst_path, output_act_func)
 
+    # Setting the information to be sent to the client
     acc_percentage = results.get("accuracy") * 100
     st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
     training_result = {

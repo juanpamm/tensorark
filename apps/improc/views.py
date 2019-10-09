@@ -68,7 +68,7 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
 
         # Construction, training and saving of the neural network
         model = build_neural_network(layers, nodes, act_functions, output_act_func)
-        model.fit(train_images, train_labels, epochs=epochs, callbacks=[checkpoint_callback])
+        model.fit(train_images, train_labels, epochs=epochs)
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
         test_loss, test_acc = model.evaluate(test_images, test_labels)
         print('Test accuracy:', test_acc)

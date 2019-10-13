@@ -252,6 +252,7 @@ def gzip_all_files_in_dir(path_to_dir):
 
 
 def set_name_classes(path):
+    class_names.clear()
     list_dir = get_subdir(path)
     for label in list_dir:
         dirname = label

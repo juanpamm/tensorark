@@ -56,12 +56,16 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
         if not os.path.exists(checkpoint_path):
             os.makedirs(checkpoint_path)
         checkpoint_full_path = os.path.join(checkpoint_path, 'cp.ckpt')
+        '''
         checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_full_path,
                                                                  save_weights_only=True,
                                                                  verbose=1)
+        '''
+
         # Loading of the train and testing images and labels
         (train_images, train_labels), (test_images, test_labels) = utils.load_data(dst_path)
         classes = utils.class_names
+        print(utils.class_names)
 
         train_images = train_images / 255.0
         test_images = test_images / 255.0

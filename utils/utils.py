@@ -212,11 +212,11 @@ def convert_image_set(parameters, dst_path):
         write_imagedata(test_image_data, test_image_path)
 
 
-def file_extraction_manager(mediar, file):
+def file_extraction_manager(mediar, file, working_dir):
     path_to_file = os.path.join(mediar, file.name)
 
     with zipfile.ZipFile(path_to_file, 'r') as zip_file:
-        zip_file.extractall(mediar)
+        zip_file.extractall(working_dir)
 
     if os.path.exists(path_to_file):
         os.remove(path_to_file)
@@ -272,7 +272,7 @@ def load_data(dst_path):
         y_train = numpy.frombuffer(lbpath.read(), numpy.uint8, offset=8)
 
     with gzip.open(paths[2], 'rb') as imgpath:
-        x_train = numpy.frombuffer(imgpath.read(), numpy.uint8, offset=16).reshape(len(y_train), 28, 28)
+        x_train = numpy.frombuffer(imgpath.read(), numpy.uint8, offset=16)  .reshape(len(y_train), 28, 28)
 
     with gzip.open(paths[1], 'rb') as lbpath:
         y_test = numpy.frombuffer(lbpath.read(), numpy.uint8, offset=8)

@@ -262,7 +262,6 @@ def set_name_classes(path):
 def load_data(dst_path):
     files = os.listdir(dst_path)
     sorted(files)
-    print(files)
     paths = []
 
     for fname in files:

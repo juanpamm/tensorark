@@ -212,7 +212,7 @@
         }
 
         function loading_gif_train() {
-            $('#result_div').html('<div>' +
+            $('#result_div').html('<div class="offset-md-4">' +
                     '<img id="loading_image" class="icon-loading" ' +
                     'src="{% static 'gif/lg.circle-slack-loading-icon.gif' %}" tabindex="1"/></div>');
             $("html, body").animate({ scrollTop: $(document).height() }, 1000);
@@ -235,58 +235,64 @@
             num_epoch.prop('disabled', false);
             afunc_outlay.val('').trigger('chosen:updated');
             afunc_outlay.prop('disabled', true).trigger('chosen:updated');
+            $('#upload_gif').html('');
             upload_file_button.prop('disabled', false);
+            upload_file_button.show();
         }
 
         $('#upload_file_btn').on('click', function () {
-            let img_form_data = new FormData();
-            img_form_data.append("file", $('#file_input')[0].files[0]);
-            console.log($('#file_input').val());
-            upload_image_train();
+            const file_input = $('#file_input');
+            if (file_input[0].files.length > 0) {
+                let img_form_data = new FormData();
+                img_form_data.append("file", file_input[0].files[0]);
+                upload_image_train();
 
-            $.ajaxSetup({
-                     beforeSend: function(xhr, settings) {
-                         function getCookie(name) {
-                             var cookieValue = null;
-                             if (document.cookie && document.cookie != '') {
-                                 var cookies = document.cookie.split(';');
-                                 for (var i = 0; i < cookies.length; i++) {
-                                     var cookie = jQuery.trim(cookies[i]);
-                                     // Does this cookie string begin with the name we want?
-                                     if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                                         break;
+                $.ajaxSetup({
+                         beforeSend: function(xhr, settings) {
+                             function getCookie(name) {
+                                 var cookieValue = null;
+                                 if (document.cookie && document.cookie != '') {
+                                     var cookies = document.cookie.split(';');
+                                     for (var i = 0; i < cookies.length; i++) {
+                                         var cookie = jQuery.trim(cookies[i]);
+                                         // Does this cookie string begin with the name we want?
+                                         if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                                             cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                             break;
+                                         }
                                      }
                                  }
+                                 return cookieValue;
                              }
-                             return cookieValue;
+                             if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                                 // Only send the token to relative URLs i.e. locally.
+                                 xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+                             }
                          }
-                         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
-                             // Only send the token to relative URLs i.e. locally.
-                             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
-                         }
-                     }
-                });
+                    });
 
-            $.ajax({
-                    type: "POST",
-                    url:"{% url 'load_image_set' %}",
-                    data: img_form_data,
-                    cache: false,
-                    contentType: false,
-                    processData: false,
-                    success: function (data) {
-                        const upload_file_button = $("#upload_file_btn");
-                        var json = JSON.parse(data);
-                        img_uploaded = json.upload_val;
-                        $('#upload_gif').html('');
-                        upload_file_button.show();
-                        alert(img_uploaded);
-                    },
-                    error: function () {
-                        alert("Something went wrong");
-                    }
-                });
+                $.ajax({
+                        type: "POST",
+                        url:"{% url 'load_image_set' %}",
+                        data: img_form_data,
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        success: function (data) {
+                            const upload_gif = $("#upload_gif");
+                            var json = JSON.parse(data);
+                            img_uploaded = json.upload_val;
+                            upload_gif.html('');
+                            upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
+                                'class="ti-check"></i></div>');
+                        },
+                        error: function () {
+                            alert("Something went wrong");
+                        }
+                    });
+            }else {
+                alert("Upload your image set");
+            }
 
 
         });

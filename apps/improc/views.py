@@ -7,10 +7,12 @@ import json
 import os.path
 import numpy as np
 import tensorflow as tf
+import shutil
 # import matplotlib.pyplot as plt
 from tensorflow import keras
 
 graph = tf.Graph()
+dst_path = ""
 
 
 def index(request):
@@ -48,15 +50,18 @@ def build_neural_network(nlayers, nodes, act_functions, output_act_func):
     return model
 
 
-def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, output_act_func):
+def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_func):
+    global dst_path
     with graph.as_default():
 
         # Checkpoint for network
+        '''
         checkpoint_path = os.path.join(MEDIA_ROOT, 'network_saved')
         if not os.path.exists(checkpoint_path):
             os.makedirs(checkpoint_path)
+        
         checkpoint_full_path = os.path.join(checkpoint_path, 'cp.ckpt')
-        '''
+        
         checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_full_path,
                                                                  save_weights_only=True,
                                                                  verbose=1)
@@ -65,7 +70,6 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
         # Loading of the train and testing images and labels
         (train_images, train_labels), (test_images, test_labels) = utils.load_data(dst_path)
         classes = utils.class_names
-        print(utils.class_names)
 
         train_images = train_images / 255.0
         test_images = test_images / 255.0
@@ -73,7 +77,7 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
         # Construction, training and saving of the neural network
         model = build_neural_network(layers, nodes, act_functions, output_act_func)
         model.fit(train_images, train_labels, epochs=epochs)
-        model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
+        # model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
         test_loss, test_acc = model.evaluate(test_images, test_labels)
         print('Test accuracy:', test_acc)
 
@@ -113,14 +117,36 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
 
 
 def load_image_set(request):
+    global dst_path
     file = request.FILES['file']
     default_storage.save(file.name, file)
     working_dir = os.path.join(MEDIA_ROOT, os.path.splitext(file.name)[0])
+    dst_path = os.path.join(working_dir, 'converted_set')
     if not os.path.exists(working_dir):
         os.mkdir(working_dir)
 
     # Extraction of the image set loaded by the user
     utils.file_extraction_manager(MEDIA_ROOT, file, working_dir)
+    extracted_dir = os.listdir(working_dir)[0]
+    path_to_extracted_dir = os.path.join(working_dir, extracted_dir)
+
+    # Paths to training and testing sets
+    path_to_training_set = os.path.join(path_to_extracted_dir, 'training')
+    path_to_testing_set = os.path.join(path_to_extracted_dir, 'testing')
+
+    # Image set conversion into MNIST format
+    utils.convert_image_set([path_to_training_set, 'train'], dst_path)
+    utils.convert_image_set([path_to_testing_set, 'test'], dst_path)
+
+    # Gzip compress the files obtained in the conversion
+    utils.gzip_all_files_in_dir(dst_path)
+
+    # Set the names for the classes
+    utils.set_name_classes(path_to_training_set)
+
+    # Remove image_set folder
+    shutil.rmtree(path_to_extracted_dir, ignore_errors=True)
+
     result = {
         'upload_val': True
     }
@@ -135,26 +161,11 @@ def execute_nn_training(request):
     activation_functions = json.loads(request.POST.get('act_func'))
     output_act_func = request.POST.get('output_act_func')
     epochs = int(request.POST.get('epochs'))
-    dst_path = os.path.join(MEDIA_ROOT, 'converted_set')
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
 
-    # Paths to training and testing set
-    path_for_train_set = os.path.join(utils.get_last_modified_dir(MEDIA_ROOT), 'training')
-    path_for_test_set = os.path.join(utils.get_last_modified_dir(MEDIA_ROOT), 'testing')
-
-    # Image set conversion into MNIST format
-    utils.convert_image_set([path_for_train_set, 'train'], dst_path)
-    utils.convert_image_set([path_for_test_set, 'test'], dst_path)
-
-    # Gzip compress the files obtained in the conversion
-    utils.gzip_all_files_in_dir(dst_path)
-
-    # Set the names for the classes
-    utils.set_name_classes(path_for_train_set)
-
     # Execute function to train the neural network
-    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, dst_path, output_act_func)
+    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, output_act_func)
 
     # Setting the information to be sent to the client
     acc_percentage = results.get("accuracy") * 100

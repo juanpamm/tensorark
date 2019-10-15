@@ -7,10 +7,12 @@ import json
 import os.path
 import numpy as np
 import tensorflow as tf
+import shutil
 # import matplotlib.pyplot as plt
 from tensorflow import keras
 
 graph = tf.Graph()
+dst_path = ""
 
 
 def index(request):
@@ -48,15 +50,18 @@ def build_neural_network(nlayers, nodes, act_functions, output_act_func):
     return model
 
 
-def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, output_act_func):
+def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_func):
+    global dst_path
     with graph.as_default():
 
         # Checkpoint for network
+        '''
         checkpoint_path = os.path.join(MEDIA_ROOT, 'network_saved')
         if not os.path.exists(checkpoint_path):
             os.makedirs(checkpoint_path)
+        
         checkpoint_full_path = os.path.join(checkpoint_path, 'cp.ckpt')
-        '''
+        
         checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_full_path,
                                                                  save_weights_only=True,
                                                                  verbose=1)
@@ -65,7 +70,6 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
         # Loading of the train and testing images and labels
         (train_images, train_labels), (test_images, test_labels) = utils.load_data(dst_path)
         classes = utils.class_names
-        print(utils.class_names)
 
         train_images = train_images / 255.0
         test_images = test_images / 255.0
@@ -73,7 +77,7 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
         # Construction, training and saving of the neural network
         model = build_neural_network(layers, nodes, act_functions, output_act_func)
         model.fit(train_images, train_labels, epochs=epochs)
-        model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
+        # model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
         test_loss, test_acc = model.evaluate(test_images, test_labels)
         print('Test accuracy:', test_acc)
 
@@ -112,177 +116,56 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path, outp
     return {"accuracy": test_acc, "predictions": predictions, "first_predict": classes[int(np.argmax(predictions[0]))]}
 
 
-'''
-def apply_sigmoid_to_net(data, hidden_lay_list, lay_list):
-    num_layers = len(hidden_lay_list)
-
-    for j in range(num_layers):
-        if j == 0:
-            l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
-            l1 = tf.nn.sigmoid(l1)
-            lay_list.append(l1)
-        elif j == (num_layers - 1):
-            output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) \
-                + hidden_lay_list[num_layers - 1]['biases']
-            lay_list.append(output)
-        else:
-            li = tf.matmul(lay_list[j - 1], hidden_lay_list[j]['weights']) + hidden_lay_list[j]['biases']
-            li = tf.nn.sigmoid(li)
-            lay_list.append(li)
-
-
-def apply_relu_to_net(data, hidden_lay_list, lay_list):
-    num_layers = len(hidden_lay_list)
-
-    for j in range(num_layers):
-        if j == 0:
-            l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
-            l1 = tf.nn.relu(l1)
-            lay_list.append(l1)
-        elif j == (num_layers - 1):
-            output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) \
-                + hidden_lay_list[num_layers - 1]['biases']
-            lay_list.append(output)
-        else:
-            li = tf.matmul(lay_list[j - 1], hidden_lay_list[j]['weights']) + hidden_lay_list[j]['biases']
-            li = tf.nn.relu(li)
-            lay_list.append(li)
-
-
-def apply_elu_to_net(data, hidden_lay_list, lay_list):
-    num_layers = len(hidden_lay_list)
-
-    for j in range(num_layers):
-        if j == 0:
-            l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
-            l1 = tf.nn.elu(l1)
-            lay_list.append(l1)
-        elif j == (num_layers - 1):
-            output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) + \
-                     hidden_lay_list[num_layers - 1]['biases']
-            lay_list.append(output)
-        else:
-            li = tf.matmul(lay_list[j - 1], hidden_lay_list[j]['weights']) + hidden_lay_list[j]['biases']
-            li = tf.nn.elu(li)
-            lay_list.append(li)
-
-
-def apply_tanh_to_net(data, hidden_lay_list, lay_list):
-    num_layers = len(hidden_lay_list)
-
-    for j in range(num_layers):
-        if j == 0:
-            l1 = tf.matmul(data, hidden_lay_list[0]['weights']) + hidden_lay_list[0]['biases']
-            l1 = tf.nn.tanh(l1)
-            lay_list.append(l1)
-        elif j == (num_layers - 1):
-            output = tf.matmul(lay_list[num_layers - 2], hidden_lay_list[num_layers - 1]['weights']) + \
-                     hidden_lay_list[num_layers - 1]['biases']
-            lay_list.append(output)
-        else:
-            li = tf.matmul(lay_list[j - 1], hidden_lay_list[j]['weights']) + hidden_lay_list[j]['biases']
-            li = tf.nn.tanh(li)
-            lay_list.append(li)
-
-
-def apply_act_func(act_func, lay_list, data, hidden_lay_list):
-    switch = {
-        'relu': apply_relu_to_net(data, hidden_lay_list, lay_list),
-        'sigmoid': apply_sigmoid_to_net(data, hidden_lay_list, lay_list),
-        'tanh': apply_tanh_to_net(data, hidden_lay_list, lay_list),
-        'elu': apply_elu_to_net(data, hidden_lay_list, lay_list)
-    }
-
-    switch.get(act_func)
-
-
-def neural_network_model(data, nodes_hl, num_layers, act_function):
-    # (input_data * weights) + biases
-    n_classes = 10
-    hidden_layer_list = []
-    layers_list = []
-
-    for i in range(num_layers):
-        if i == 0:
-            first_layer = {'weights': tf.Variable(tf.random_normal([784, nodes_hl[0]])),
-                           'biases': tf.Variable(tf.random_normal([nodes_hl[0]]))}
-            hidden_layer_list.append(first_layer)
-        else:
-            hidden_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl[i - 1], nodes_hl[i]])),
-                            'biases': tf.Variable(tf.random_normal([nodes_hl[i]]))}
-            hidden_layer_list.append(hidden_layer)
-
-    output_layer = {'weights': tf.Variable(tf.random_normal([nodes_hl[num_layers - 1], n_classes])),
-                    'biases': tf.Variable(tf.random_normal([n_classes]))}
-    hidden_layer_list.append(output_layer)
-
-    apply_act_func(act_function, layers_list, data, hidden_layer_list)
-
-    return layers_list[num_layers]
-
-
-def train_neural_network(nodes_hl, num_layers, num_epochs, act_function):
-    mnist = input_data.read_data_sets("/tmp/data", one_hot=True)
-    # height x width
-    x = tf.placeholder('float', [None, 784])
-    y = tf.placeholder('float')
-    batch_size = 100
-
-    prediction = neural_network_model(x, nodes_hl, num_layers, act_function)
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=y))
-    optimizer = tf.train.AdamOptimizer().minimize(cost)
-
-    hm_epochs = num_epochs
-
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-
-        for epoch in range(hm_epochs):
-            epoch_loss = 0
-            for _ in range(int(mnist.train.num_examples / batch_size)):
-                epoch_x, epoch_y = mnist.train.next_batch(batch_size)
-                _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
-                epoch_loss += c
-            print('Epoch ', (epoch + 1), 'completed out of ', hm_epochs, 'loss: ', epoch_loss)
-
-        correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-        return accuracy.eval({x: mnist.test.images, y: mnist.test.labels})
-'''
-
-
-def execute_nn_training(request):
-    # Variables needed for the training process
+def load_image_set(request):
+    global dst_path
     file = request.FILES['file']
     default_storage.save(file.name, file)
-    layers = int(request.POST.get('layers'))
-    nodes = json.loads(request.POST.get('nodes'))
-    activation_functions = json.loads(request.POST.get('act_func'))
-    output_act_func = request.POST.get('output_act_func')
-    epochs = int(request.POST.get('epochs'))
-    dst_path = os.path.join(MEDIA_ROOT, 'converted_set')
-    for i in range(len(nodes)):
-        nodes[i] = int(nodes[i])
+    working_dir = os.path.join(MEDIA_ROOT, os.path.splitext(file.name)[0])
+    dst_path = os.path.join(working_dir, 'converted_set')
+    if not os.path.exists(working_dir):
+        os.mkdir(working_dir)
 
     # Extraction of the image set loaded by the user
-    utils.file_extraction_manager(MEDIA_ROOT, file)
+    utils.file_extraction_manager(MEDIA_ROOT, file, working_dir)
+    extracted_dir = os.listdir(working_dir)[0]
+    path_to_extracted_dir = os.path.join(working_dir, extracted_dir)
 
-    # Paths to training and testing set
-    path_for_train_set = os.path.join(utils.get_last_modified_dir(MEDIA_ROOT), 'training')
-    path_for_test_set = os.path.join(utils.get_last_modified_dir(MEDIA_ROOT), 'testing')
+    # Paths to training and testing sets
+    path_to_training_set = os.path.join(path_to_extracted_dir, 'training')
+    path_to_testing_set = os.path.join(path_to_extracted_dir, 'testing')
 
     # Image set conversion into MNIST format
-    utils.convert_image_set([path_for_train_set, 'train'], dst_path)
-    utils.convert_image_set([path_for_test_set, 'test'], dst_path)
+    utils.convert_image_set([path_to_training_set, 'train'], dst_path)
+    utils.convert_image_set([path_to_testing_set, 'test'], dst_path)
 
     # Gzip compress the files obtained in the conversion
     utils.gzip_all_files_in_dir(dst_path)
 
     # Set the names for the classes
-    utils.set_name_classes(path_for_train_set)
+    utils.set_name_classes(path_to_training_set)
+
+    # Remove image_set folder
+    shutil.rmtree(path_to_extracted_dir, ignore_errors=True)
+
+    result = {
+        'upload_val': True
+    }
+    json_data = json.dumps(result)
+    return JsonResponse(json_data, safe=False)
+
+
+def execute_nn_training(request):
+    # Variables needed for the training process
+    layers = int(request.POST.get('layers'))
+    nodes = json.loads(request.POST.get('nodes'))
+    activation_functions = json.loads(request.POST.get('act_func'))
+    output_act_func = request.POST.get('output_act_func')
+    epochs = int(request.POST.get('epochs'))
+    for i in range(len(nodes)):
+        nodes[i] = int(nodes[i])
 
     # Execute function to train the neural network
-    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, dst_path, output_act_func)
+    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, output_act_func)
 
     # Setting the information to be sent to the client
     acc_percentage = results.get("accuracy") * 100

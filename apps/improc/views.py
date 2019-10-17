@@ -147,11 +147,12 @@ def load_image_set(request):
 
 
 def download_saved_model(request):
-    file_path = os.path.join(dst_path, 'saved_model')
-    if os.path.exists(file_path):
-        with open(file_path, 'rb') as fh:
+    file_path = os.path.join('saved_model', 'neural_network.h5')
+    full_file_path = os.path.join(dst_path, file_path)
+    if os.path.exists(full_file_path):
+        with open(full_file_path, 'rb') as fh:
             response = HttpResponse(fh.read(), content_type="application/x-hdf5")
-            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(full_file_path)
             return response
     raise Http404
 

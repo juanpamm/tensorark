@@ -139,8 +139,9 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-4 offset-md-4">
-                                <button type="button" id="download_model" class="btn btn-success">
-                                    Download <i class="ti-download" style="margin-left: 8px;"></i></button>
+                                <a href="{% url 'download_saved_model' %}" id="download_model" class="btn btn-success"
+                                   style="color: white;"> Download <i class="ti-download" style="margin-left: 8px;
+                                   color: white;"></i></a>
                             </div>
                         </div>
                     </div>
@@ -409,10 +410,10 @@
             var layers = $('#num_hid_layers').val();
             var row_id = '';
 
-            if(layers == ''){
+            if(layers === ''){
                 alert("Please specify a number of layers");
             }
-            else if(layers == 0){
+            else if(layers === 0){
                 alert("Please enter at least one layer");
             }
             else{

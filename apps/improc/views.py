@@ -15,8 +15,8 @@ graph = tf.Graph()
 dst_path = ""
 
 
-def index(request):
-    return render(request, 'improc/index.html')
+def build_improc_nn_template(request):
+    return render(request, 'improc/build_improc_nn.html')
 
 
 def add_layers_to_network(model, nodes, activation_func):

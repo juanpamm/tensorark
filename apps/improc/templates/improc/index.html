@@ -129,6 +129,24 @@
                     </div>
                 </div>
             </div>
+            <div class="col-lg-6 offset-lg-3" id="div_download" hidden>
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">
+                            Download the trained network
+                        </strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 offset-md-4">
+                                <a href="{% url 'download_saved_model' %}" id="download_model" class="btn btn-success"
+                                   style="color: white;"> Download <i class="ti-download" style="margin-left: 8px;
+                                   color: white;"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="col-lg-6 offset-lg-3">
                 <div class="card">
                     <div class="card-header">
@@ -223,6 +241,7 @@
             const num_hid_layers = $('#num_hid_layers');
             const afunc_outlay = $('#afunc_outlay');
             const upload_file_button = $("#upload_file_btn");
+            img_uploaded = false;
 
             table.rows().remove().draw();
             $('#result_div').html('');
@@ -368,15 +387,17 @@
                     processData: false,
                     success: function (data) {
                         var json = JSON.parse(data);
+                        const result_div = $('#result_div');
                         $('#label_result_area').prop('hidden', false);
-                        $('#result_div').html('');
-                        $('#result_div').html('<textarea class="form-control" id="result_area" rows="3" placeholder="Accuracy of the network"\n' +
+                        result_div.html('');
+                        result_div.html('<textarea class="form-control" id="result_area" rows="3" placeholder="Accuracy of the network"\n' +
                                                 'tabindex="1" readonly></textarea>');
                         $('#result_area').val("Accuracy: " + json.net_accuracy + "% \n" + "First prediction: " +
                                                 json.prediction);
                         $('#result_area').focus();
                         $('#train_button').prop('hidden', true);
                         $('#train_other_button').prop('hidden', false);
+                        $('#div_download').prop('hidden', false);
                     },
                     error: function () {
                         alert("There was an error in the server");
@@ -389,10 +410,10 @@
             var layers = $('#num_hid_layers').val();
             var row_id = '';
 
-            if(layers == ''){
+            if(layers === ''){
                 alert("Please specify a number of layers");
             }
-            else if(layers == 0){
+            else if(layers === 0){
                 alert("Please enter at least one layer");
             }
             else{

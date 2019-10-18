@@ -1,6 +1,6 @@
 from django.core.files.storage import default_storage
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from tensorark.settings import MEDIA_ROOT
 from utils import utils
 import json
@@ -53,22 +53,14 @@ def build_neural_network(nlayers, nodes, act_functions, output_act_func):
 def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_func):
     global dst_path
     with graph.as_default():
-
+        path_for_converted_set = os.path.join(dst_path, 'converted_set')
         # Checkpoint for network
-        '''
-        checkpoint_path = os.path.join(MEDIA_ROOT, 'network_saved')
+        checkpoint_path = os.path.join(dst_path, 'saved_model')
         if not os.path.exists(checkpoint_path):
             os.makedirs(checkpoint_path)
-        
-        checkpoint_full_path = os.path.join(checkpoint_path, 'cp.ckpt')
-        
-        checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_full_path,
-                                                                 save_weights_only=True,
-                                                                 verbose=1)
-        '''
 
         # Loading of the train and testing images and labels
-        (train_images, train_labels), (test_images, test_labels) = utils.load_data(dst_path)
+        (train_images, train_labels), (test_images, test_labels) = utils.load_data(path_for_converted_set)
         classes = utils.class_names
 
         train_images = train_images / 255.0
@@ -77,7 +69,7 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
         # Construction, training and saving of the neural network
         model = build_neural_network(layers, nodes, act_functions, output_act_func)
         model.fit(train_images, train_labels, epochs=epochs)
-        # model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
+        model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
         test_loss, test_acc = model.evaluate(test_images, test_labels)
         print('Test accuracy:', test_acc)
 
@@ -120,26 +112,26 @@ def load_image_set(request):
     global dst_path
     file = request.FILES['file']
     default_storage.save(file.name, file)
-    working_dir = os.path.join(MEDIA_ROOT, os.path.splitext(file.name)[0])
-    dst_path = os.path.join(working_dir, 'converted_set')
-    if not os.path.exists(working_dir):
-        os.mkdir(working_dir)
+    dst_path = os.path.join(MEDIA_ROOT, os.path.splitext(file.name)[0])
+    converted_path = os.path.join(dst_path, 'converted_set')
+    if not os.path.exists(dst_path):
+        os.mkdir(dst_path)
 
     # Extraction of the image set loaded by the user
-    utils.file_extraction_manager(MEDIA_ROOT, file, working_dir)
-    extracted_dir = os.listdir(working_dir)[0]
-    path_to_extracted_dir = os.path.join(working_dir, extracted_dir)
+    utils.file_extraction_manager(MEDIA_ROOT, file, dst_path)
+    extracted_dir = os.listdir(dst_path)[0]
+    path_to_extracted_dir = os.path.join(dst_path, extracted_dir)
 
     # Paths to training and testing sets
     path_to_training_set = os.path.join(path_to_extracted_dir, 'training')
     path_to_testing_set = os.path.join(path_to_extracted_dir, 'testing')
 
     # Image set conversion into MNIST format
-    utils.convert_image_set([path_to_training_set, 'train'], dst_path)
-    utils.convert_image_set([path_to_testing_set, 'test'], dst_path)
+    utils.convert_image_set([path_to_training_set, 'train'], converted_path)
+    utils.convert_image_set([path_to_testing_set, 'test'], converted_path)
 
     # Gzip compress the files obtained in the conversion
-    utils.gzip_all_files_in_dir(dst_path)
+    utils.gzip_all_files_in_dir(converted_path)
 
     # Set the names for the classes
     utils.set_name_classes(path_to_training_set)
@@ -152,6 +144,17 @@ def load_image_set(request):
     }
     json_data = json.dumps(result)
     return JsonResponse(json_data, safe=False)
+
+
+def download_saved_model(request):
+    file_path = os.path.join('saved_model', 'neural_network.h5')
+    full_file_path = os.path.join(dst_path, file_path)
+    if os.path.exists(full_file_path):
+        with open(full_file_path, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/x-hdf5")
+            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(full_file_path)
+            return response
+    raise Http404
 
 
 def execute_nn_training(request):

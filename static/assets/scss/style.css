@@ -932,6 +932,7 @@ aside.left-panel {
             top: 10px;
             right: 0;
             text-align: right;
+            display: none;
             -webkit-transition: all .25s ease;
             -moz-transition: all .25s ease;
             -ms-transition: all .25s ease;
@@ -965,7 +966,8 @@ aside.left-panel {
               text-align: left;
               width: 25px; }
         .navbar .navbar-nav li.menu-item-has-children.show a:before {
-          content: "\f107"; }
+          content: "\f107";
+          display: none;}
         .navbar .navbar-nav li.menu-item-has-children.show .sub-menu {
           max-height: 1000px;
           opacity: 1;

@@ -288,3 +288,12 @@ def save_model_to_json(path_to_save, model):
     with open(path_to_json_file, 'w') as json_file:
         json_file.write(model_json)
 
+
+def compress_model_folder(path_to_folder):
+    # I need to pass the working directory path and build the paths to the saved model and the location to save the zip.
+    ziph = zipfile.ZipFile('Python.zip', 'w', zipfile.ZIP_DEFLATED)
+    for root, dirs, files in os.walk(path_to_folder):
+        for file in files:
+            ziph.write(os.path.join(path_to_folder, file))
+
+

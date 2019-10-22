@@ -293,9 +293,10 @@ def compress_model_folder(path_to_working_dir):
     # I need to pass the working directory path and build the paths to the saved model and the location to save the zip.
     path_to_save_zip = os.path.join(path_to_working_dir, 'nn_model.zip')
     path_to_folder = os.path.join(path_to_working_dir, 'saved_model')
+    length = len(path_to_folder)
     ziph = zipfile.ZipFile(path_to_save_zip, 'w', zipfile.ZIP_DEFLATED)
     for root, dirs, files in os.walk(path_to_folder):
+        folder = root[length:]
         for file in files:
-            ziph.write(os.path.join(path_to_folder, file))
-
+            ziph.write(os.path.join(root, file), os.path.join(folder, file))
 

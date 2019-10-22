@@ -71,6 +71,7 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
         model.fit(train_images, train_labels, epochs=epochs)
         utils.save_model_to_json(checkpoint_path, model)
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
+        utils.compress_model_folder(dst_path)
         test_loss, test_acc = model.evaluate(test_images, test_labels)
         print('Test accuracy:', test_acc)
 

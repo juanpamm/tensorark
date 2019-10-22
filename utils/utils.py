@@ -271,7 +271,7 @@ def load_data(dst_path):
         y_train = numpy.frombuffer(lbpath.read(), numpy.uint8, offset=8)
 
     with gzip.open(paths[2], 'rb') as imgpath:
-        x_train = numpy.frombuffer(imgpath.read(), numpy.uint8, offset=16)  .reshape(len(y_train), 28, 28)
+        x_train = numpy.frombuffer(imgpath.read(), numpy.uint8, offset=16).reshape(len(y_train), 28, 28)
 
     with gzip.open(paths[1], 'rb') as lbpath:
         y_test = numpy.frombuffer(lbpath.read(), numpy.uint8, offset=8)
@@ -280,3 +280,23 @@ def load_data(dst_path):
         x_test = numpy.frombuffer(imgpath.read(), numpy.uint8, offset=16).reshape(len(y_test), 28, 28)
 
     return (x_train, y_train), (x_test, y_test)
+
+
+def save_model_to_json(path_to_save, model):
+    model_json = model.to_json()
+    path_to_json_file = os.path.join(path_to_save, 'json_nn.json')
+    with open(path_to_json_file, 'w') as json_file:
+        json_file.write(model_json)
+
+
+def compress_model_folder(path_to_working_dir):
+    # I need to pass the working directory path and build the paths to the saved model and the location to save the zip.
+    path_to_save_zip = os.path.join(path_to_working_dir, 'nn_model.zip')
+    path_to_folder = os.path.join(path_to_working_dir, 'saved_model')
+    length = len(path_to_folder)
+    ziph = zipfile.ZipFile(path_to_save_zip, 'w', zipfile.ZIP_DEFLATED)
+    for root, dirs, files in os.walk(path_to_folder):
+        folder = root[length:]
+        for file in files:
+            ziph.write(os.path.join(root, file), os.path.join(folder, file))
+

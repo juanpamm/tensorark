@@ -69,7 +69,9 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
         # Construction, training and saving of the neural network
         model = build_neural_network(layers, nodes, act_functions, output_act_func)
         model.fit(train_images, train_labels, epochs=epochs)
+        utils.save_model_to_json(checkpoint_path, model)
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
+        utils.compress_model_folder(dst_path)
         test_loss, test_acc = model.evaluate(test_images, test_labels)
         print('Test accuracy:', test_acc)
 
@@ -147,11 +149,10 @@ def load_image_set(request):
 
 
 def download_saved_model(request):
-    file_path = os.path.join('saved_model', 'neural_network.h5')
-    full_file_path = os.path.join(dst_path, file_path)
+    full_file_path = os.path.join(dst_path, 'nn_model.zip')
     if os.path.exists(full_file_path):
         with open(full_file_path, 'rb') as fh:
-            response = HttpResponse(fh.read(), content_type="application/x-hdf5")
+            response = HttpResponse(fh.read(), content_type="application/zip")
             response['Content-Disposition'] = 'inline; filename=' + os.path.basename(full_file_path)
             return response
     raise Http404

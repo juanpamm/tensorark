@@ -19,6 +19,10 @@ def build_improc_nn_template(request):
     return render(request, 'improc/build_improc_nn.html')
 
 
+def upload_image_nn_template(request):
+    return render(request, 'improc/upload_image_set_nn.html')
+
+
 def add_layers_to_network(model, nodes, activation_func):
     if activation_func == 'relu':
         model.add(keras.layers.Dense(nodes, activation=tf.nn.relu))
@@ -142,7 +146,8 @@ def load_image_set(request):
     shutil.rmtree(path_to_extracted_dir, ignore_errors=True)
 
     result = {
-        'upload_val': True
+        'upload_val': True,
+        'img_set_name': str(os.path.splitext(file.name)[0])
     }
     json_data = json.dumps(result)
     return JsonResponse(json_data, safe=False)

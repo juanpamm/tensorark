@@ -37,6 +37,12 @@
                         </div>
                     </div>
                 </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div id="div_next_button" class="col-md-4 offset-md-4">
+                        </div>
+                    </div>
+                </div>
             </div>
 {% endblock %}
 
@@ -60,6 +66,9 @@
 
     let img_uploaded = false;
     let img_set_name = "";
+    let something = '{{ something }}';
+
+    console.log(something);
 
     function upload_image_train() {
             const upload_file_button = $("#upload_file_btn");
@@ -80,13 +89,13 @@
                 $.ajaxSetup({
                      beforeSend: function(xhr, settings) {
                          function getCookie(name) {
-                             var cookieValue = null;
-                             if (document.cookie && document.cookie != '') {
-                                 var cookies = document.cookie.split(';');
-                                 for (var i = 0; i < cookies.length; i++) {
-                                     var cookie = jQuery.trim(cookies[i]);
+                             let cookieValue = null;
+                             if (document.cookie && document.cookie !== '') {
+                                 let cookies = document.cookie.split(';');
+                                 for (let i = 0; i < cookies.length; i++) {
+                                     let cookie = jQuery.trim(cookies[i]);
                                      // Does this cookie string begin with the name we want?
-                                     if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                                     if (cookie.substring(0, name.length + 1) === (name + '=')) {
                                          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                                          break;
                                      }
@@ -116,7 +125,10 @@
                             upload_gif.html('');
                             upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
                                 'class="ti-check"></i></div>');
-                            console.log(img_set_name);
+                            $('#div_next_button').html('<a href="{% url 'build_improc_nn_template' folder='thing'%}" ' +
+                                'id="next_button" class="btn btn-success"' +
+                                'style="color: white;"> Next <i class="ti-angle-double-right" ' +
+                                'style="margin-left: 8px; color: white;"></i></a>');
                         },
                         error: function () {
                             alert("Something went wrong");

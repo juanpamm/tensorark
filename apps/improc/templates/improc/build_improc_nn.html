@@ -182,6 +182,10 @@
                 no_results_text: "Oops, nothing found!",
                 width: "100%"
             });
+
+            let folder = '{{ request.GET.folder }}';
+            console.log(folder);
+
         });
     </script>
 
@@ -221,14 +225,16 @@
         });
 
         $('#train_button').on('click', function () {
-            var form_data = new FormData();
-            var num_hidden_layers = $('#num_hid_layers').val();
-            var number_epochs = $('#num_epoch').val();
-            var output_act_func = $('#afunc_outlay option:selected').val();
-            var table_nodes = table.$('input').serializeArray();
-            var table_act_funcs = table.$('select').serializeArray();
-            var nodes = [];
-            var layers_activation_functions = [];
+            const num_hid_layers = $('#num_hid_layers');
+            const num_epoch = $('#num_epoch');
+            let form_data = new FormData();
+            let num_hidden_layers = num_hid_layers.val();
+            let number_epochs = num_epoch.val();
+            let output_act_func = $('#afunc_outlay option:selected').val();
+            let table_nodes = table.$('input').serializeArray();
+            let table_act_funcs = table.$('select').serializeArray();
+            let nodes = [];
+            let layers_activation_functions = [];
 
             for (let j = 0; j < num_hidden_layers; j++){
                 nodes.push(table_nodes[j].value);
@@ -240,9 +246,9 @@
                 alert("Please, make sure you have filled all the fields and uploaded your image set.");
             }else{
                 $('#train_button').prop('disabled', true);
-                $('#num_hid_layers').prop('disabled', true);
+                num_hid_layers.prop('disabled', true);
                 $('#num_nodes').prop('disabled', true);
-                $('#num_epoch').prop('disabled', true);
+                num_epoch.prop('disabled', true);
 
                 form_data.append("layers", num_hidden_layers);
                 form_data.append("epochs", number_epochs);
@@ -255,11 +261,11 @@
                 $.ajaxSetup({
                      beforeSend: function(xhr, settings) {
                          function getCookie(name) {
-                             var cookieValue = null;
+                             let cookieValue = null;
                              if (document.cookie && document.cookie != '') {
-                                 var cookies = document.cookie.split(';');
-                                 for (var i = 0; i < cookies.length; i++) {
-                                     var cookie = jQuery.trim(cookies[i]);
+                                 let cookies = document.cookie.split(';');
+                                 for (let i = 0; i < cookies.length; i++) {
+                                     let cookie = jQuery.trim(cookies[i]);
                                      // Does this cookie string begin with the name we want?
                                      if (cookie.substring(0, name.length + 1) == (name + '=')) {
                                          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
@@ -284,7 +290,7 @@
                     contentType: false,
                     processData: false,
                     success: function (data) {
-                        var json = JSON.parse(data);
+                        let json = JSON.parse(data);
                         const result_div = $('#result_div');
                         $('#label_result_area').prop('hidden', false);
                         result_div.html('');
@@ -305,8 +311,8 @@
         });
 
         $('#add_nodes').on('click', function () {
-            var layers = $('#num_hid_layers').val();
-            var row_id = '';
+            let layers = $('#num_hid_layers').val();
+            let row_id = '';
 
             if(layers === ''){
                 alert("Please specify a number of layers");

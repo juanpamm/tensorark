@@ -15,7 +15,7 @@ graph = tf.Graph()
 dst_path = ""
 
 
-def build_improc_nn_template(request):
+def build_improc_nn_template(request, folder):
     return render(request, 'improc/build_improc_nn.html')
 
 

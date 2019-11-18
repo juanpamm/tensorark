@@ -222,6 +222,23 @@ def file_extraction_manager(mediar, file, working_dir):
         os.remove(path_to_file)
 
 
+def get_name_for_working_dir(mediar):
+    working_dirs_list = os.listdir(mediar)
+    tmp_working_dirs_list = []
+    name_for_new_work_dir = "ta_model_wd_1"
+
+    for work_dir in working_dirs_list:
+        if work_dir.find('ta_model_wd_') != -1:
+            tmp_working_dirs_list.append(work_dir)
+
+    if len(tmp_working_dirs_list) != 0:
+        last_dir = tmp_working_dirs_list[len(tmp_working_dirs_list) - 1]
+        number_of_last_dir = int(last_dir.split('_')[3])
+        name_for_new_work_dir = 'ta_model_wd_' + str(number_of_last_dir + 1)
+
+    return name_for_new_work_dir
+
+
 def get_last_modified_dir(mediar):
     tmp_date = 0
     tmp_position = 0

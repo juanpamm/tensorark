@@ -12,11 +12,10 @@ import shutil
 from tensorflow import keras
 
 graph = tf.Graph()
-dst_path = ""
-
 
 def build_improc_nn_template(request, folder):
-    return render(request, 'improc/build_improc_nn.html')
+    contexto = {'folder': folder}
+    return render(request, 'improc/build_improc_nn.html', contexto)
 
 
 def upload_image_nn_template(request):
@@ -54,8 +53,7 @@ def build_neural_network(nlayers, nodes, act_functions, output_act_func):
     return model
 
 
-def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_func):
-    global dst_path
+def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_func, dst_path):
     with graph.as_default():
         path_for_converted_set = os.path.join(dst_path, 'converted_set')
         # Checkpoint for network
@@ -115,10 +113,10 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
 
 
 def load_image_set(request):
-    global dst_path
     file = request.FILES['file']
     default_storage.save(file.name, file)
-    dst_path = os.path.join(MEDIA_ROOT, os.path.splitext(file.name)[0])
+    working_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT)
+    dst_path = os.path.join(MEDIA_ROOT, working_dir_name)
     converted_path = os.path.join(dst_path, 'converted_set')
     if not os.path.exists(dst_path):
         os.mkdir(dst_path)
@@ -147,7 +145,7 @@ def load_image_set(request):
 
     result = {
         'upload_val': True,
-        'img_set_name': str(os.path.splitext(file.name)[0])
+        'img_set_name': working_dir_name
     }
     json_data = json.dumps(result)
     return JsonResponse(json_data, safe=False)
@@ -170,11 +168,13 @@ def execute_nn_training(request):
     activation_functions = json.loads(request.POST.get('act_func'))
     output_act_func = request.POST.get('output_act_func')
     epochs = int(request.POST.get('epochs'))
+    fold_name = request.POST.get('folder')
+    dst_path = os.path.join(MEDIA_ROOT, fold_name)
     for i in range(len(nodes)):
         nodes[i] = int(nodes[i])
 
     # Execute function to train the neural network
-    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, output_act_func)
+    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, output_act_func, dst_path)
 
     # Setting the information to be sent to the client
     acc_percentage = results.get("accuracy") * 100

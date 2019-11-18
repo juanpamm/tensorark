@@ -182,15 +182,11 @@
                 no_results_text: "Oops, nothing found!",
                 width: "100%"
             });
-
-            let folder = '{{ request.GET.folder }}';
-            console.log(folder);
-
         });
     </script>
 
     <script>
-
+        let fold = '{{ folder }}';
         let table = $('#node-table').DataTable();
 
         function loading_gif_train() {
@@ -255,6 +251,7 @@
                 form_data.append("act_func", JSON.stringify(layers_activation_functions));
                 form_data.append("output_act_func", output_act_func);
                 form_data.append("nodes", JSON.stringify(nodes));
+                form_data.append("folder", fold);
 
                 loading_gif_train();
 

@@ -113,10 +113,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-4 offset-md-4">
-                                <a href="{% url 'download_saved_model' %}" id="download_model" class="btn btn-success"
-                                   style="color: white;"> Download <i class="ti-download" style="margin-left: 8px;
-                                   color: white;"></i></a>
+                            <div class="col-md-4 offset-md-4" id="download_model_div">
                             </div>
                         </div>
                     </div>
@@ -291,14 +288,21 @@
                         const result_div = $('#result_div');
                         $('#label_result_area').prop('hidden', false);
                         result_div.html('');
-                        result_div.html('<textarea class="form-control" id="result_area" rows="3" placeholder="Accuracy of the network"\n' +
-                                                'tabindex="1" readonly></textarea>');
+                        result_div.html('<textarea class="form-control" id="result_area" rows="3" ' +
+                                            'placeholder="Accuracy of the network"\n' +
+                                            'tabindex="1" readonly></textarea>');
                         $('#result_area').val("Accuracy: " + json.net_accuracy + "% \n" + "First prediction: " +
                                                 json.prediction);
                         $('#result_area').focus();
                         $('#train_button').prop('hidden', true);
                         $('#train_other_button').prop('hidden', false);
+                        let url = "{% url 'download_saved_model' 'folder_name' %}".
+                            replace(/folder_name/, fold);
+                        console.log(fold);
                         $('#div_download').prop('hidden', false);
+                        $('#download_model_div').html('<a href="' + url + '"' + 'id="download_model" ' +
+                            'class="btn btn-success" style="color: white;"> Download <i class="ti-download"' +
+                            'style="margin-left: 8px; color: white;"></i></a>');
                     },
                     error: function () {
                         alert("There was an error in the server");

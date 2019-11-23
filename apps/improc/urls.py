@@ -7,5 +7,5 @@ urlpatterns = [
     path('upload_set_nn/', upload_image_nn_template, name='upload_image_nn_template'),
     path('train_nn/', execute_nn_training, name='execute_nn_training'),
     path('upload_img_set/', load_image_set, name='load_image_set'),
-    path('download_model/', download_saved_model, name='download_saved_model')
+    path('download_model/<str:dir_name>/', download_saved_model, name='download_saved_model')
 ]

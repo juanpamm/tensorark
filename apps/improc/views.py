@@ -13,6 +13,7 @@ from tensorflow import keras
 
 graph = tf.Graph()
 
+
 def build_improc_nn_template(request, folder):
     contexto = {'folder': folder}
     return render(request, 'improc/build_improc_nn.html', contexto)
@@ -151,7 +152,8 @@ def load_image_set(request):
     return JsonResponse(json_data, safe=False)
 
 
-def download_saved_model(request):
+def download_saved_model(request, dir_name):
+    dst_path = os.path.join(MEDIA_ROOT, dir_name)
     full_file_path = os.path.join(dst_path, 'nn_model.zip')
     if os.path.exists(full_file_path):
         with open(full_file_path, 'rb') as fh:

@@ -3,8 +3,10 @@
     <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         <i class="menu-icon fa fa-laptop"></i> <span class="pull-left"> Image processing module </span></a>
     <ul class="sub-menu children dropdown-menu">
-        <li class="{% if 'im_proc' in request.path %} show {% endif %}">
-            <i class="fa fa-wrench"></i><a href="{% url 'build_improc_nn_template' %}">Build neural network</a></li>
+        <li class="{% if 'im_proc' in request.path %} show {% endif %}"><i class="fa fa-picture-o"></i>
+            <a href="{% url 'upload_image_nn_template' %}">Upload image set</a></li>
+        <li class="{% if 'im_proc' in request.path %} show {% endif %}"><i class="fa fa-wrench"></i>
+            <a href="#">Build neural network</a></li>
         <li><i class="fa fa-upload"></i><a href="#">Load neural network</a></li>
     </ul>
 </li>

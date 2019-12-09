@@ -20,5 +20,6 @@ from django.conf.urls import include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', include('apps.home.urls')),
     path('im_proc/', include('apps.improc.urls'))
 ]

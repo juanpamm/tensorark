@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'bootstrap3',
     'django_select2',
     'apps.improc',
+    'apps.home'
 ]
 
 MIDDLEWARE = [

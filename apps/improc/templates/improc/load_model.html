@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load bootstrap3 %}
+{% load staticfiles %}
+
+{% block title_block %} TensorArk {% endblock  %}
+
+{% block page_title_block %} TensorArk {% endblock %}
+
+{% block css_block %}
+
+    <link rel="stylesheet" href="{% static 'assets/css/lib/datatable/dataTables.bootstrap.min.css' %}">
+
+{% endblock %}
+
+{% block body_block %}
+    <div class="col-lg-6 offset-lg-3">
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">
+                            Upload your model
+                        </strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <div class="col col-md-3">
+                                <label for="file_input" class=" form-control-label">File input</label>
+                            </div>
+                            <div class="col-12 col-md-7">
+                                <input type="file" id="file_input" name="fileinp" class="form-control-file">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" id="upload_file_btn" class="btn btn-info">
+                                    <i class="ti-upload"></i></button>
+                            </div>
+                            <div class="col-md-2" id="upload_gif">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div id="div_next_button" class="col-md-4 offset-md-4">
+                        </div>
+                    </div>
+                </div>
+            </div>
+{% endblock %}
+
+{% block js_block %}
+
+    <!-- Datatable scripts -->
+
+    <script src="{% static 'assets/js/lib/data-table/datatables.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/vfs_fonts.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.html5.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.print.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.colVis.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/datatables-init.js' %}"></script>
+
+    <script src="{% static 'assets/js/lib/chosen/chosen.jquery.min.js' %}"></script>
+
+    <script>
+
+    function upload_image_train() {
+            const upload_file_button = $("#upload_file_btn");
+            upload_file_button.prop('disabled', true);
+            upload_file_button.hide();
+            $('#upload_gif').html('<div class="offset-md-4">' +
+                    '<img id="loading_image" class="icon-loading" ' +
+                    'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1"/></div>');
+    }
+
+    $('#upload_file_btn').on('click', function () {
+            const file_input = $('#file_input');
+            if (file_input[0].files.length > 0) {
+                let img_form_data = new FormData();
+                img_form_data.append("file", file_input[0].files[0]);
+                upload_image_train();
+
+                $.ajaxSetup({
+                     beforeSend: function(xhr, settings) {
+                         function getCookie(name) {
+                             let cookieValue = null;
+                             if (document.cookie && document.cookie !== '') {
+                                 let cookies = document.cookie.split(';');
+                                 for (let i = 0; i < cookies.length; i++) {
+                                     let cookie = jQuery.trim(cookies[i]);
+                                     // Does this cookie string begin with the name we want?
+                                     if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                         break;
+                                     }
+                                 }
+                             }
+                             return cookieValue;
+                         }
+                         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                             // Only send the token to relative URLs i.e. locally.
+                             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+                         }
+                     }
+                });
+
+                $.ajax({
+                        type: "POST",
+                        url:"{% url 'load_image_set' %}",
+                        data: img_form_data,
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        success: function (data) {
+                            const upload_gif = $("#upload_gif");
+                            var json = JSON.parse(data);
+                        },
+                        error: function () {
+                            alert("Something went wrong");
+                        }
+                    });
+            }else {
+                alert("Upload a model");
+            }
+        });
+
+    </script>
+
+{% endblock %}

@@ -23,6 +23,10 @@ def upload_image_nn_template(request):
     return render(request, 'improc/upload_image_set_nn.html')
 
 
+def load_model_template(request):
+    return render(request, 'improc/load_model.html')
+
+
 def add_layers_to_network(model, nodes, activation_func):
     if activation_func == 'relu':
         model.add(keras.layers.Dense(nodes, activation=tf.nn.relu))

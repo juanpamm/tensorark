@@ -56,6 +56,7 @@ import imageio
 import sys
 import os
 import random
+from natsort import natsorted
 
 height = 0
 width = 0
@@ -222,21 +223,31 @@ def file_extraction_manager(mediar, file, working_dir):
         os.remove(path_to_file)
 
 
-def get_name_for_working_dir(mediar):
-    working_dirs_list = os.listdir(mediar)
-    tmp_working_dirs_list = []
-    name_for_new_work_dir = "ta_model_wd_1"
+def get_name_for_working_dir(mediar, action):
+    mediar_dirs_list = os.listdir(mediar)
+    tmp_mediar_dirs_list = []
+    prefix_new_dir = ""
+    name_for_new_dir = ""
 
-    for work_dir in working_dirs_list:
-        if work_dir.find('ta_model_wd_') != -1:
-            tmp_working_dirs_list.append(work_dir)
+    if action == 'wd':
+        prefix_new_dir = "ta_model_wd_"
+        name_for_new_dir = "ta_model_wd_1"
+    elif action == 'lm':
+        prefix_new_dir = "ta_loaded_model_"
+        name_for_new_dir = "ta_loaded_model_1"
 
-    if len(tmp_working_dirs_list) != 0:
-        last_dir = tmp_working_dirs_list[len(tmp_working_dirs_list) - 1]
+    for work_dir in mediar_dirs_list:
+        if work_dir.find(prefix_new_dir) != -1:
+            tmp_mediar_dirs_list.append(work_dir)
+
+    sorted_list = natsorted(tmp_mediar_dirs_list)
+
+    if len(tmp_mediar_dirs_list) != 0:
+        last_dir = sorted_list[len(tmp_mediar_dirs_list) - 1]
         number_of_last_dir = int(last_dir.split('_')[3])
-        name_for_new_work_dir = 'ta_model_wd_' + str(number_of_last_dir + 1)
+        name_for_new_dir = prefix_new_dir + str(number_of_last_dir + 1)
 
-    return name_for_new_work_dir
+    return name_for_new_dir
 
 
 def get_last_modified_dir(mediar):

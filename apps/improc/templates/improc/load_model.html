@@ -78,6 +78,7 @@
             if (file_input[0].files.length > 0) {
                 let img_form_data = new FormData();
                 img_form_data.append("file", file_input[0].files[0]);
+                img_form_data.append("action", "lm");
                 upload_image_train();
 
                 $.ajaxSetup({
@@ -106,14 +107,19 @@
 
                 $.ajax({
                         type: "POST",
-                        url:"{% url 'load_image_set' %}",
+                        url:"{% url 'load_model' %}",
                         data: img_form_data,
                         cache: false,
                         contentType: false,
                         processData: false,
                         success: function (data) {
                             const upload_gif = $("#upload_gif");
-                            var json = JSON.parse(data);
+                            let json = JSON.parse(data);
+                            let dir_name = json.img_set_name;
+                            alert(dir_name);
+                            upload_gif.html('');
+                            upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
+                                'class="ti-check"></i></div>');
                         },
                         error: function () {
                             alert("Something went wrong");

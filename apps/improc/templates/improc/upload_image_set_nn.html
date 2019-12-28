@@ -81,6 +81,7 @@
             if (file_input[0].files.length > 0) {
                 let img_form_data = new FormData();
                 img_form_data.append("file", file_input[0].files[0]);
+                img_form_data.append("action", "wd");
                 upload_image_train();
 
                 $.ajaxSetup({

@@ -119,8 +119,9 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
 
 def load_image_set(request):
     file = request.FILES['file']
+    action = request.POST.get('action')
     default_storage.save(file.name, file)
-    working_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT)
+    working_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action)
     dst_path = os.path.join(MEDIA_ROOT, working_dir_name)
     converted_path = os.path.join(dst_path, 'converted_set')
     if not os.path.exists(dst_path):
@@ -191,4 +192,31 @@ def execute_nn_training(request):
     }
 
     json_data = json.dumps(training_result)
+    return JsonResponse(json_data, safe=False)
+
+
+# -------------------------------------- MODEL LOADING ------------------------------------
+
+def load_model(request):
+    model_zip = request.FILES['file']
+    action = request.POST.get('action')
+    default_storage.save(model_zip.name, model_zip)
+    load_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action)
+    dst_path = os.path.join(MEDIA_ROOT, load_dir_name)
+    if not os.path.exists(dst_path):
+        os.mkdir(dst_path)
+
+    utils.file_extraction_manager(MEDIA_ROOT, model_zip, dst_path)
+    extracted_list_dir = os.listdir(dst_path)
+    path_to_json_file = os.path.join(dst_path, extracted_list_dir[0])
+    f = open(path_to_json_file, "r")
+    f_content = f.read()
+    f.close()
+
+    print(f_content)
+
+    result = {
+        'img_set_name': load_dir_name
+    }
+    json_data = json.dumps(result)
     return JsonResponse(json_data, safe=False)

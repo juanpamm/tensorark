@@ -210,13 +210,25 @@ def load_model(request):
     extracted_list_dir = os.listdir(dst_path)
     path_to_json_file = os.path.join(dst_path, extracted_list_dir[0])
     f = open(path_to_json_file, "r")
-    f_content = f.read()
+    f_content = json.loads(f.read())['config']
     f.close()
-
-    print(f_content)
+    len_f_content = len(f_content)
 
     result = {
-        'img_set_name': load_dir_name
+        'num_layers': len_f_content,
+        'img_set_name': load_dir_name,
+        'hidden_layers': []
     }
+
+    for i in range(len_f_content):
+        if i == 0:
+            result['input_layer'] = [f_content[i]['config']['batch_input_shape'][1],
+                                     f_content[i]['config']['batch_input_shape'][2]]
+        elif i == (len_f_content - 1):
+            result['output_layer'] = [f_content[i]['config']['units'], f_content[i]['config']['activation']]
+        else:
+            result['hidden_layers'].append([f_content[i]['config']['units'], f_content[i]['config']['activation']])
+
+    print(result)
     json_data = json.dumps(result)
     return JsonResponse(json_data, safe=False)

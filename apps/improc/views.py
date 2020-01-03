@@ -198,8 +198,15 @@ def execute_nn_training(request):
 # -------------------------------------- MODEL LOADING ------------------------------------
 
 def load_model(request):
-    model_zip = request.FILES['file']
     action = request.POST.get('action')
+    model_zip = request.FILES['file']
+    activation_funcs = {
+        'relu': 'Rectified Linear Unit',
+        'sigmoid': 'Sigmoid',
+        'tanh': 'Hyperbolic Tangent',
+        'elu': 'Exponential Linear Unit',
+        'softmax': 'Softmax'
+    }
     default_storage.save(model_zip.name, model_zip)
     load_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action)
     dst_path = os.path.join(MEDIA_ROOT, load_dir_name)
@@ -225,10 +232,11 @@ def load_model(request):
             result['input_layer'] = [f_content[i]['config']['batch_input_shape'][1],
                                      f_content[i]['config']['batch_input_shape'][2]]
         elif i == (len_f_content - 1):
-            result['output_layer'] = [f_content[i]['config']['units'], f_content[i]['config']['activation']]
+            result['output_layer'] = [f_content[i]['config']['units'],
+                                      activation_funcs.get(f_content[i]['config']['activation'])]
         else:
-            result['hidden_layers'].append([f_content[i]['config']['units'], f_content[i]['config']['activation']])
+            result['hidden_layers'].append([f_content[i]['config']['units'],
+                                            activation_funcs.get(f_content[i]['config']['activation'])])
 
-    print(result)
     json_data = json.dumps(result)
     return JsonResponse(json_data, safe=False)

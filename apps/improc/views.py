@@ -216,6 +216,7 @@ def load_model(request):
     utils.file_extraction_manager(MEDIA_ROOT, model_zip, dst_path)
     extracted_list_dir = os.listdir(dst_path)
     path_to_json_file = os.path.join(dst_path, extracted_list_dir[0])
+    path_to_model_file = os.path.join(dst_path, extracted_list_dir[1])
     f = open(path_to_json_file, "r")
     f_content = json.loads(f.read())['config']
     f.close()
@@ -237,6 +238,9 @@ def load_model(request):
         else:
             result['hidden_layers'].append([f_content[i]['config']['units'],
                                             activation_funcs.get(f_content[i]['config']['activation'])])
+
+    loaded_neural_network = keras.models.load_model(path_to_model_file)
+    # loaded_neural_network.summary()
 
     json_data = json.dumps(result)
     return JsonResponse(json_data, safe=False)

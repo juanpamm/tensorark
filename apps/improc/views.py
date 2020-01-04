@@ -23,6 +23,10 @@ def upload_image_nn_template(request):
     return render(request, 'improc/upload_image_set_nn.html')
 
 
+def load_model_template(request):
+    return render(request, 'improc/load_model.html')
+
+
 def add_layers_to_network(model, nodes, activation_func):
     if activation_func == 'relu':
         model.add(keras.layers.Dense(nodes, activation=tf.nn.relu))
@@ -115,8 +119,9 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
 
 def load_image_set(request):
     file = request.FILES['file']
+    action = request.POST.get('action')
     default_storage.save(file.name, file)
-    working_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT)
+    working_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action)
     dst_path = os.path.join(MEDIA_ROOT, working_dir_name)
     converted_path = os.path.join(dst_path, 'converted_set')
     if not os.path.exists(dst_path):
@@ -187,4 +192,55 @@ def execute_nn_training(request):
     }
 
     json_data = json.dumps(training_result)
+    return JsonResponse(json_data, safe=False)
+
+
+# -------------------------------------- MODEL LOADING ------------------------------------
+
+def load_model(request):
+    action = request.POST.get('action')
+    model_zip = request.FILES['file']
+    activation_funcs = {
+        'relu': 'Rectified Linear Unit',
+        'sigmoid': 'Sigmoid',
+        'tanh': 'Hyperbolic Tangent',
+        'elu': 'Exponential Linear Unit',
+        'softmax': 'Softmax'
+    }
+    default_storage.save(model_zip.name, model_zip)
+    load_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action)
+    dst_path = os.path.join(MEDIA_ROOT, load_dir_name)
+    if not os.path.exists(dst_path):
+        os.mkdir(dst_path)
+
+    utils.file_extraction_manager(MEDIA_ROOT, model_zip, dst_path)
+    extracted_list_dir = os.listdir(dst_path)
+    path_to_json_file = os.path.join(dst_path, extracted_list_dir[0])
+    path_to_model_file = os.path.join(dst_path, extracted_list_dir[1])
+    f = open(path_to_json_file, "r")
+    f_content = json.loads(f.read())['config']
+    f.close()
+    len_f_content = len(f_content)
+
+    result = {
+        'num_layers': len_f_content,
+        'img_set_name': load_dir_name,
+        'hidden_layers': []
+    }
+
+    for i in range(len_f_content):
+        if i == 0:
+            result['input_layer'] = [f_content[i]['config']['batch_input_shape'][1],
+                                     f_content[i]['config']['batch_input_shape'][2]]
+        elif i == (len_f_content - 1):
+            result['output_layer'] = [f_content[i]['config']['units'],
+                                      activation_funcs.get(f_content[i]['config']['activation'])]
+        else:
+            result['hidden_layers'].append([f_content[i]['config']['units'],
+                                            activation_funcs.get(f_content[i]['config']['activation'])])
+
+    loaded_neural_network = keras.models.load_model(path_to_model_file)
+    # loaded_neural_network.summary()
+
+    json_data = json.dumps(result)
     return JsonResponse(json_data, safe=False)

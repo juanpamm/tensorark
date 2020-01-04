@@ -14,36 +14,59 @@
 
 {% block body_block %}
     <div class="col-lg-6 offset-lg-3">
-                <div class="card">
-                    <div class="card-header">
-                        <strong class="card-title">
-                            Upload your training set
-                        </strong>
+        <div class="card">
+            <div class="card-header">
+                <strong class="card-title">
+                    Upload your model
+                </strong>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <div class="col col-md-3">
+                        <label for="file_input" class=" form-control-label">File input</label>
                     </div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <div class="col col-md-3">
-                                <label for="file_input" class=" form-control-label">File input</label>
-                            </div>
-                            <div class="col-12 col-md-7">
-                                <input type="file" id="file_input" name="fileinp" class="form-control-file">
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" id="upload_file_btn" class="btn btn-info">
-                                    <i class="ti-upload"></i></button>
-                            </div>
-                            <div class="col-md-2" id="upload_gif">
-                            </div>
-                        </div>
+                    <div class="col-12 col-md-7">
+                        <input type="file" id="file_input" name="fileinp" class="form-control-file">
                     </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div id="div_next_button" class="col-md-4 offset-md-4">
-                        </div>
+                    <div class="col-md-2">
+                        <button type="button" id="upload_file_btn" class="btn btn-info">
+                            <i class="ti-upload"></i></button>
+                    </div>
+                    <div class="col-md-2" id="upload_gif">
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card">
+            <div class="card-header">
+                <strong class="card-title">Structure of your neural network</strong>
+            </div>
+            <div class="card-body">
+                <div class="col-lg-12" id="num-layers"></div>
+                <div class="col-lg-12" id="input-layer"></div>
+                <div class="col-lg-12">
+                    <table id="nn-table" class="table table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Layer</th>
+                                    <th>Number of nodes</th>
+                                    <th>Activation function</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>Layer</th>
+                                    <th>Number of nodes</th>
+                                    <th>Activation function</th>
+                                </tr>
+                            </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block js_block %}
@@ -63,9 +86,7 @@
     <script src="{% static 'assets/js/lib/chosen/chosen.jquery.min.js' %}"></script>
 
     <script>
-
-    let img_uploaded = false;
-    let img_set_name = "";
+    let table = $('#nn-table').DataTable();
 
     function upload_image_train() {
             const upload_file_button = $("#upload_file_btn");
@@ -81,7 +102,7 @@
             if (file_input[0].files.length > 0) {
                 let img_form_data = new FormData();
                 img_form_data.append("file", file_input[0].files[0]);
-                img_form_data.append("action", "wd");
+                img_form_data.append("action", "lm");
                 upload_image_train();
 
                 $.ajaxSetup({
@@ -110,43 +131,43 @@
 
                 $.ajax({
                         type: "POST",
-                        url:"{% url 'load_image_set' %}",
+                        url:"{% url 'load_model' %}",
                         data: img_form_data,
                         cache: false,
                         contentType: false,
                         processData: false,
                         success: function (data) {
                             const upload_gif = $("#upload_gif");
-                            var json = JSON.parse(data);
-                            img_uploaded = json.upload_val;
-                            img_set_name = json.img_set_name;
+                            let json = JSON.parse(data);
+                            let dir_name = json.img_set_name;
+                            let hid_layers = json.hidden_layers;
+                            let out_layer = json.output_layer;
                             upload_gif.html('');
                             upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
                                 'class="ti-check"></i></div>');
-                            let url = "{% url 'build_improc_nn_template' 'folder_name' %}".
-                            replace(/folder_name/, img_set_name);
-                            $('#div_next_button').html('<a href="' + url + '"' +
-                                'id="next_button" class="btn btn-success"' +
-                                'style="color: white;"> Next <i class="ti-angle-double-right" ' +
-                                'style="margin-left: 8px; color: white;"></i></a>');
+                            $('#num-layers').html('<strong> Number of layers: </strong>' + json.num_layers);
+                            $('#input-layer').html('<strong> Input layer batch size: </strong>' +
+                                json.input_layer[0] + 'x' + json.input_layer[1] + '<br><br>');
+                            //Info about hidden layers is added to the datatable
+                            for(let i = 0; i < hid_layers.length; i++){
+                                table.row.add(
+                                    ['Hidden layer ' + (i + 1), hid_layers[i][0], hid_layers[i][1]]
+                                ).draw();
+                            }
+                            //Info about output layer is added to the datatable
+                            table.row.add(
+                                ['Output layer', out_layer[0], out_layer[1]]
+                            ).draw()
+
                         },
                         error: function () {
                             alert("Something went wrong");
                         }
                     });
             }else {
-                alert("Upload your image set");
+                alert("Upload a model");
             }
         });
-
-
-    /*
-    const upload_file_button = $("#upload_file_btn");
-    upload_file_button.prop('disabled', false);
-    upload_file_button.show();
-    $('#file_input').val('');
-    $('#upload_gif').html('');
-    */
 
     </script>
 

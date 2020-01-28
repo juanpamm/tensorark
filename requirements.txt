@@ -1,5 +1,5 @@
 Django
 Pillow
-tensorflow==1.5
+tensorflow==1.15.2
 django-select2
 django-bootstrap3

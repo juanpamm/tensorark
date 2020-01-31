@@ -3,13 +3,17 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse, Http404
 from tensorark.settings import MEDIA_ROOT
 from utils import utils
+from tensorflow import keras
 import json
 import os.path
 import numpy as np
 import tensorflow as tf
 import shutil
-# import matplotlib.pyplot as plt
-from tensorflow import keras
+import pandas
+import seaborn
+import matplotlib
+from matplotlib import pyplot as plt
+matplotlib.use('Agg')
 
 graph = tf.Graph()
 
@@ -60,6 +64,7 @@ def build_neural_network(nlayers, nodes, act_functions, output_act_func):
 
 def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_func, dst_path):
     with graph.as_default():
+        sess = tf.Session()
         path_for_converted_set = os.path.join(dst_path, 'converted_set')
         # Checkpoint for network
         checkpoint_path = os.path.join(dst_path, 'saved_model')
@@ -84,6 +89,36 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
 
         # Use the test set for prediction
         predictions = model.predict(test_images)
+        predicts = model.predict_classes(test_images)
+
+        # Build confusion matrix
+        con_mat = tf.confusion_matrix(labels=test_labels, predictions=predicts)
+        con_mat_val = con_mat.eval(session=sess)
+
+        # Path to confusion matrix image
+        con_matrix_img_name = 'conf_matrix.png'
+        con_matrix_img_path = os.path.join(dst_path, con_matrix_img_name)
+        working_dir = os.path.split(dst_path)[1]
+        img_name_to_send = working_dir + '/' + con_matrix_img_name
+
+        con_mat_df = pandas.DataFrame(con_mat_val, index=classes, columns=classes)
+        plt.figure(figsize=(8, 8))
+        seaborn.heatmap(con_mat_df, annot=True, cmap=plt.cm.Blues, fmt="d")
+        plt.tight_layout()
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+        plt.savefig(con_matrix_img_path, format='png', bbox_inches='tight')
+
+        '''
+        con_mat_figure = plt.gcf()
+        buffer = io.BytesIO()
+        con_mat_figure.savefig(buffer, format='png')
+        buffer.seek(0)
+        string_to_encode_fig = base64.b64encode(buffer.read())
+
+        uri_for_figure = 'data:image/png;base64,' + str(string_to_encode_fig.decode())
+        print(uri_for_figure)
+        '''
 
         '''
         plt.figure()
@@ -114,7 +149,7 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
         print(np.argmax(predictions[2]))
         print(classes[int(np.argmax(predictions[2]))])
 
-    return {"accuracy": test_acc, "predictions": predictions, "first_predict": classes[int(np.argmax(predictions[0]))]}
+    return {"accuracy": test_acc, "predictions": predictions, "img_name": img_name_to_send, "first_predict": classes[int(np.argmax(predictions[0]))]}
 
 
 def load_image_set(request):
@@ -188,7 +223,8 @@ def execute_nn_training(request):
     st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
     training_result = {
         'net_accuracy': st_percentage,
-        'prediction': results.get("first_predict")
+        'prediction': results.get("first_predict"),
+        'img_name': results.get("img_name")
     }
 
     json_data = json.dumps(training_result)

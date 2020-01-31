@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load bootstrap3 %}
 {% load staticfiles %}
+{% load static %}
 
 {% block title_block %} TensorArk {% endblock  %}
 
@@ -148,6 +149,10 @@
                 <label class="form-control-label" id="label_result_area" for="result_area" hidden> Results </label>
             </div>
             <div id="result_div" class="col-md-10" tabindex="1">
+            </div>
+        </div>
+        <div class="row" style="margin-top: 80px">
+            <div id="confusion_matrix" class="col-md-8 offset-md-2">
 
             </div>
         </div>
@@ -200,6 +205,7 @@
 
             table.rows().remove().draw();
             $('#result_div').html('');
+            $('#confusion_matrix').html('');
             $('#label_result_area').prop('hidden', true);
             $('#num_nodes').prop('disabled', false);
             num_hid_layers.val('');
@@ -298,11 +304,12 @@
                         $('#train_other_button').prop('hidden', false);
                         let url = "{% url 'download_saved_model' 'folder_name' %}".
                             replace(/folder_name/, fold);
-                        console.log(fold);
                         $('#div_download').prop('hidden', false);
                         $('#download_model_div').html('<a href="' + url + '"' + 'id="download_model" ' +
                             'class="btn btn-success" style="color: white;"> Download <i class="ti-download"' +
                             'style="margin-left: 8px; color: white;"></i></a>');
+                        $('#confusion_matrix').html('<img alt="Confusion matrix" src="/media/' + json.img_name + '" ' +
+                            'height="600" width="600">');
                     },
                     error: function () {
                         alert("There was an error in the server");

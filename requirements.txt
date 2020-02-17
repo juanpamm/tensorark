@@ -8,3 +8,5 @@ keras
 matplotlib
 imageio
 natsort
+pandas
+seaborn

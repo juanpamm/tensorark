@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load bootstrap3 %}
+{% load staticfiles %}
+
+{% block title_block %} TensorArk {% endblock  %}
+
+{% block page_title_block %} TensorArk {% endblock %}
+
+{% block css_block %}
+{% endblock %}
+
+{% block body_block %}
+    <div class="col-lg-6 offset-lg-3">
+        <div class="card">
+            <div class="card-header">
+                <strong class="card-title">
+                    Upload your training set
+                </strong>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <div class="col col-md-3">
+                        <label for="file_input" class=" form-control-label">File input</label>
+                    </div>
+                    <div class="col-12 col-md-7">
+                        <input type="file" id="file_input" name="fileinp" class="form-control-file">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" id="upload_file_btn" class="btn btn-info">
+                            <i class="ti-upload"></i></button>
+                    </div>
+                    <div class="col-md-2" id="upload_gif">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div id="div_next_button" class="col-md-4 offset-md-4">
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js_block %}
+
+    <!-- Datatable scripts -->
+    <script src="{% static 'assets/js/lib/data-table/datatables.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/vfs_fonts.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.html5.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.print.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.colVis.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/datatables-init.js' %}"></script>
+
+{% endblock %}

@@ -56,4 +56,19 @@
     <script src="{% static 'assets/js/lib/data-table/buttons.colVis.min.js' %}"></script>
     <script src="{% static 'assets/js/lib/data-table/datatables-init.js' %}"></script>
 
+    <script>
+
+        function upload_image_train() {
+            const upload_file_button = $("#upload_file_btn");
+            upload_file_button.prop('disabled', true);
+            upload_file_button.hide();
+            $('#upload_gif').html('<div class="offset-md-4">' +
+                    '<img id="loading_image" class="icon-loading" ' +
+                    'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1"/></div>');
+        }
+
+
+    </script>
+
 {% endblock %}
+

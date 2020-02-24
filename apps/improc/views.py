@@ -155,8 +155,9 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
 def load_image_set(request):
     file = request.FILES['file']
     action = request.POST.get('action')
+    app = request.POST.get('app')
     default_storage.save(file.name, file)
-    working_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action)
+    working_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action, app)
     dst_path = os.path.join(MEDIA_ROOT, working_dir_name)
     converted_path = os.path.join(dst_path, 'converted_set')
     if not os.path.exists(dst_path):
@@ -234,8 +235,10 @@ def execute_nn_training(request):
 # -------------------------------------- MODEL LOADING ------------------------------------
 
 def load_model(request):
+    keras.backend.clear_session()
     action = request.POST.get('action')
     model_zip = request.FILES['file']
+    app = request.POST.get('app')
     activation_funcs = {
         'relu': 'Rectified Linear Unit',
         'sigmoid': 'Sigmoid',
@@ -243,8 +246,9 @@ def load_model(request):
         'elu': 'Exponential Linear Unit',
         'softmax': 'Softmax'
     }
+
     default_storage.save(model_zip.name, model_zip)
-    load_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action)
+    load_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action, app)
     dst_path = os.path.join(MEDIA_ROOT, load_dir_name)
     if not os.path.exists(dst_path):
         os.mkdir(dst_path)

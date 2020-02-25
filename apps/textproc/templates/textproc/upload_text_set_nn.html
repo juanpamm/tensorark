@@ -105,36 +105,36 @@
             });
 
             $.ajax({
-                        type: "POST",
-                        url:"{% url 'load_text_set' %}",
-                        data: txt_form_data,
-                        cache: false,
-                        contentType: false,
-                        processData: false,
-                        success: function (data) {
-                            const upload_gif = $("#upload_gif");
-                            var json = JSON.parse(data);
-                            img_uploaded = json.upload_val;
-                            img_set_name = json.txt_set_name;
-                            upload_gif.html('');
-                            upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
-                                'class="ti-check"></i></div>');
-                            /*
-                            let url = "{% url 'build_improc_nn_template' 'folder_name' %}".
-                            replace(/folder_name/, img_set_name);
-                            $('#div_next_button').html('<a href="' + url + '"' +
-                                'id="next_button" class="btn btn-success"' +
-                                'style="color: white;"> Next <i class="ti-angle-double-right" ' +
-                                'style="margin-left: 8px; color: white;"></i></a>');*/
-                        },
-                        error: function () {
-                            alert("Something went wrong");
-                        }
-                    });
-            }else {
-                alert("Upload your image set");
-            }
-        });
+                    type: "POST",
+                    url:"{% url 'load_text_set' %}",
+                    data: txt_form_data,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success: function (data) {
+                        const upload_gif = $("#upload_gif");
+                        var json = JSON.parse(data);
+                        img_uploaded = json.upload_val;
+                        img_set_name = json.txt_set_name;
+                        upload_gif.html('');
+                        upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
+                            'class="ti-check"></i></div>');
+                        /*
+                        let url = "{% url 'build_improc_nn_template' 'folder_name' %}".
+                        replace(/folder_name/, img_set_name);
+                        $('#div_next_button').html('<a href="' + url + '"' +
+                            'id="next_button" class="btn btn-success"' +
+                            'style="color: white;"> Next <i class="ti-angle-double-right" ' +
+                            'style="margin-left: 8px; color: white;"></i></a>');*/
+                    },
+                    error: function () {
+                        alert("Something went wrong");
+                    }
+                });
+        }else {
+            alert("Upload your image set");
+        }
+    });
 
 
     </script>

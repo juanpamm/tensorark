@@ -110,17 +110,6 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
         plt.savefig(con_matrix_img_path, format='png', bbox_inches='tight')
 
         '''
-        con_mat_figure = plt.gcf()
-        buffer = io.BytesIO()
-        con_mat_figure.savefig(buffer, format='png')
-        buffer.seek(0)
-        string_to_encode_fig = base64.b64encode(buffer.read())
-
-        uri_for_figure = 'data:image/png;base64,' + str(string_to_encode_fig.decode())
-        print(uri_for_figure)
-        '''
-
-        '''
         plt.figure()
         plt.imshow(test_images[0])
         plt.colorbar()

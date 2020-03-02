@@ -7,12 +7,18 @@ from tensorflow import keras
 import json
 import os.path
 import numpy as np
+import random
 import tensorflow as tf
 import shutil
 
 
 def upload_text_nn_template(request):
     return render(request, 'textproc/upload_text_set_nn.html')
+
+
+def build_textproc_nn_template(request, folder):
+    contexto = {'folder': folder}
+    return render(request, 'textproc/build_textproc_nn.html', contexto)
 
 
 def load_text_set(request):
@@ -22,28 +28,47 @@ def load_text_set(request):
     default_storage.save(file.name, file)
     working_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action, app)
     dst_path = os.path.join(MEDIA_ROOT, working_dir_name)
-    # converted_path = os.path.join(dst_path, 'converted_set')
     if not os.path.exists(dst_path):
         os.mkdir(dst_path)
 
-    # Extraction of the image set loaded by the user
+    # Extraction of the text set loaded by the user
     utils.file_extraction_manager(MEDIA_ROOT, file, dst_path)
-    extracted_dir = os.listdir(dst_path)[0]
-    path_to_extracted_dir = os.path.join(dst_path, extracted_dir)
-    '''
-    # Paths to training and testing sets
-    path_to_training_set = os.path.join(path_to_extracted_dir, 'training')
-    path_to_testing_set = os.path.join(path_to_extracted_dir, 'testing')
-
-    # Set the names for the classes
-    utils.set_name_classes(path_to_training_set)
-
-    # Remove image_set folder
-    shutil.rmtree(path_to_extracted_dir, ignore_errors=True)
-    '''
     result = {
         'upload_val': True,
         'txt_set_name': working_dir_name
     }
     json_data = json.dumps(result)
     return JsonResponse(json_data, safe=False)
+
+
+def read_train_text_files(path_to_dataset, data_type):
+    # Load the training or test data, according to the value of the data_type variable
+    texts = []
+    labels = []
+    for category in ['pos', 'neg']:
+        train_path = os.path.join(path_to_dataset, data_type, category)
+        for fname in sorted(os.listdir(train_path)):
+            if fname.endswith('.txt'):
+                with open(os.path.join(train_path, fname), encoding="utf8") as f:
+                    texts.append(f.read())
+                labels.append(0 if category == 'neg' else 1)
+
+    return texts, labels
+
+
+def preprocess_train_test_data(work_dir):
+    work_dir_full_path = os.path.join(MEDIA_ROOT, work_dir)
+    data_dir = os.listdir(work_dir_full_path)[0]
+    train_test_set_path = os.path.join(work_dir_full_path, data_dir)
+
+    train_texts_and_labels = read_train_text_files(train_test_set_path, 'train')
+    test_texts_and_labels = read_train_text_files(train_test_set_path, 'test')
+
+    # Shuffle the training data and labels.
+    random.seed()
+    random.shuffle(train_texts_and_labels[0])
+    random.seed()
+    random.shuffle(train_texts_and_labels[1])
+
+    return (train_texts_and_labels[0], np.array(train_texts_and_labels[1])), \
+           (test_texts_and_labels[0], np.array(test_texts_and_labels[1]))

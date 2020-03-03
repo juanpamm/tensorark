@@ -33,6 +33,8 @@ def load_text_set(request):
 
     # Extraction of the text set loaded by the user
     utils.file_extraction_manager(MEDIA_ROOT, file, dst_path)
+    data = preprocess_train_test_data(dst_path)
+    determine_model_to_use(data)
     result = {
         'upload_val': True,
         'txt_set_name': working_dir_name
@@ -72,3 +74,18 @@ def preprocess_train_test_data(work_dir):
 
     return (train_texts_and_labels[0], np.array(train_texts_and_labels[1])), \
            (test_texts_and_labels[0], np.array(test_texts_and_labels[1]))
+
+
+def determine_model_to_use(preprocessed_data):
+    words_per_sample = [len(s.split()) for s in preprocessed_data[0][0]]
+    median_num_words_per_sample = np.median(words_per_sample)
+    num_samples = len(preprocessed_data[0][0])
+    print(num_samples)
+
+    num_samples_num_words_ratio = num_samples / median_num_words_per_sample
+    print(num_samples_num_words_ratio)
+
+    if num_samples_num_words_ratio < 1500:
+        print('Multi-Layer Perceptron')
+    elif num_samples_num_words_ratio >= 1500:
+        print('Sequence model')

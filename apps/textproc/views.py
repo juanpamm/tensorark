@@ -3,6 +3,9 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse, Http404
 from tensorark.settings import MEDIA_ROOT
 from utils import utils
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import f_classif
 from tensorflow import keras
 import json
 import os.path
@@ -80,12 +83,62 @@ def determine_model_to_use(preprocessed_data):
     words_per_sample = [len(s.split()) for s in preprocessed_data[0][0]]
     median_num_words_per_sample = np.median(words_per_sample)
     num_samples = len(preprocessed_data[0][0])
-    print(num_samples)
 
     num_samples_num_words_ratio = num_samples / median_num_words_per_sample
-    print(num_samples_num_words_ratio)
 
     if num_samples_num_words_ratio < 1500:
-        print('Multi-Layer Perceptron')
+        x_train, x_val = ngram_vectorize(preprocessed_data[0][0], preprocessed_data[0][1], preprocessed_data[1][0])
     elif num_samples_num_words_ratio >= 1500:
         print('Sequence model')
+
+
+def ngram_vectorize(train_texts, train_labels, val_texts):
+    # Vectorization parameters
+    # Range (inclusive) of n-gram sizes for tokenizing text.
+    ngram_range = (1, 2)
+
+    # Limit on the number of features. We use the top 20K features.
+    top_features = 20000
+
+    # Whether text should be split into word or character n-grams.
+    # One of 'word', 'char'.
+    token_mode = 'word'
+
+    # Minimum document/corpus frequency below which a token will be discarded.
+    min_freq_to_discard_token = 2
+
+    """Vectorizes texts as n-gram vectors.
+
+    1 text = 1 tf-idf vector the length of vocabulary of unigrams + bigrams.
+
+    # Arguments
+        train_texts: list, training text strings.
+        train_labels: np.ndarray, training labels.
+        val_texts: list, validation text strings.
+
+    # Returns
+        x_train, x_val: vectorized training and validation texts
+    """
+    # Create keyword arguments to pass to the 'tf-idf' vectorizer.
+    kwargs = {
+            'ngram_range': ngram_range,  # Use 1-grams + 2-grams.
+            'dtype': 'int32',
+            'strip_accents': 'unicode',
+            'decode_error': 'replace',
+            'analyzer': token_mode,  # Split text into word tokens.
+            'min_df': min_freq_to_discard_token,
+    }
+    vectorizer = TfidfVectorizer(**kwargs)
+
+    # Learn vocabulary from training texts and vectorize training texts.
+    x_train = vectorizer.fit_transform(train_texts)
+
+    # Vectorize validation texts.
+    x_val = vectorizer.transform(val_texts)
+
+    # Select top 'k' of the vectorized features.
+    selector = SelectKBest(f_classif, k=min(top_features, x_train.shape[1]))
+    selector.fit(x_train, train_labels)
+    x_train = selector.transform(x_train).astype('float32')
+    x_val = selector.transform(x_val).astype('float32')
+    return x_train, x_val

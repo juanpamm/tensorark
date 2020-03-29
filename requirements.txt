@@ -10,3 +10,4 @@ imageio
 natsort
 pandas
 seaborn
+scikit-learn

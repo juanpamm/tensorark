@@ -327,4 +327,3 @@ def compress_model_folder(path_to_working_dir):
         folder = root[length:]
         for file in files:
             ziph.write(os.path.join(root, file), os.path.join(folder, file))
-

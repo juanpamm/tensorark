@@ -223,18 +223,24 @@ def file_extraction_manager(mediar, file, working_dir):
         os.remove(path_to_file)
 
 
-def get_name_for_working_dir(mediar, action):
+def get_name_for_working_dir(mediar, action, app):
     mediar_dirs_list = os.listdir(mediar)
     tmp_mediar_dirs_list = []
     prefix_new_dir = ""
     name_for_new_dir = ""
 
-    if action == 'wd':
-        prefix_new_dir = "ta_model_wd_"
-        name_for_new_dir = "ta_model_wd_1"
-    elif action == 'lm':
-        prefix_new_dir = "ta_loaded_model_"
-        name_for_new_dir = "ta_loaded_model_1"
+    if action == 'wd' and app == 'improc':
+        prefix_new_dir = "ta_model_improc_wd_"
+        name_for_new_dir = "ta_model_improc_wd_1"
+    elif action == 'wd' and app == 'textproc':
+        prefix_new_dir = "ta_model_textproc_wd_"
+        name_for_new_dir = "ta_model_textproc_wd_1"
+    elif action == 'lm' and app == 'improc':
+        prefix_new_dir = "ta_loaded_model_improc_"
+        name_for_new_dir = "ta_loaded_model_improc_1"
+    elif action == 'lm' and app == 'textproc':
+        prefix_new_dir = "ta_loaded_model_textproc_"
+        name_for_new_dir = "ta_loaded_model_textproc_1"
 
     for work_dir in mediar_dirs_list:
         if work_dir.find(prefix_new_dir) != -1:
@@ -244,7 +250,7 @@ def get_name_for_working_dir(mediar, action):
 
     if len(tmp_mediar_dirs_list) != 0:
         last_dir = sorted_list[len(tmp_mediar_dirs_list) - 1]
-        number_of_last_dir = int(last_dir.split('_')[3])
+        number_of_last_dir = int(last_dir.split('_')[4])
         name_for_new_dir = prefix_new_dir + str(number_of_last_dir + 1)
 
     return name_for_new_dir

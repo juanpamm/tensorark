@@ -103,6 +103,7 @@
                 let img_form_data = new FormData();
                 img_form_data.append("file", file_input[0].files[0]);
                 img_form_data.append("action", "lm");
+                img_form_data.append("app", "improc");
                 upload_image_train();
 
                 $.ajaxSetup({

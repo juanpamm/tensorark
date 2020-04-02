@@ -67,6 +67,10 @@
             </div>
         </div>
     </div>
+    <div class="col-lg-8 offset-lg-2" style="margin-top: 60px">
+        <div id="confusion_matrix">
+        </div>
+    </div>
 {% endblock %}
 
 {% block js_block %}
@@ -140,7 +144,7 @@
                         success: function (data) {
                             const upload_gif = $("#upload_gif");
                             let json = JSON.parse(data);
-                            let dir_name = json.img_set_name;
+                            let dir_name = json.img_name;
                             let hid_layers = json.hidden_layers;
                             let out_layer = json.output_layer;
                             upload_gif.html('');
@@ -158,7 +162,10 @@
                             //Info about output layer is added to the datatable
                             table.row.add(
                                 ['Output layer', out_layer[0], out_layer[1]]
-                            ).draw()
+                            ).draw();
+                            $('#confusion_matrix').html('<img alt="Confusion matrix" src="/media/' + dir_name + '" ' +
+                            'height="600" width="600">');
+
 
                         },
                         error: function () {

@@ -83,7 +83,6 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
         model.fit(train_images, train_labels, epochs=epochs)
         utils.save_model_to_json(checkpoint_path, model)
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
-        utils.compress_model_folder(dst_path)
         test_loss, test_acc = model.evaluate(test_images, test_labels)
         print('Test accuracy:', test_acc)
 
@@ -108,6 +107,8 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
         plt.savefig(con_matrix_img_path, format='png', bbox_inches='tight')
+        shutil.copy(con_matrix_img_path, checkpoint_path)
+        utils.compress_model_folder(dst_path)
 
         '''
         plt.figure()
@@ -243,9 +244,10 @@ def load_model(request):
         os.mkdir(dst_path)
 
     utils.file_extraction_manager(MEDIA_ROOT, model_zip, dst_path)
-    extracted_list_dir = os.listdir(dst_path)
-    path_to_json_file = os.path.join(dst_path, extracted_list_dir[0])
-    path_to_model_file = os.path.join(dst_path, extracted_list_dir[1])
+    path_to_conf_matrix = os.path.split(dst_path)[1] + '/conf_matrix.png'
+    path_to_json_file = os.path.join(dst_path, 'json_nn.json')
+    path_to_model_file = os.path.join(dst_path, 'neural_network.h5')
+
     f = open(path_to_json_file, "r")
     f_content = json.loads(f.read())['config']
     f.close()
@@ -254,7 +256,8 @@ def load_model(request):
     result = {
         'num_layers': len_f_content,
         'img_set_name': load_dir_name,
-        'hidden_layers': []
+        'hidden_layers': [],
+        'img_name': path_to_conf_matrix
     }
 
     for i in range(len_f_content):

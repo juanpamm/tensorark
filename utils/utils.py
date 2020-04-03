@@ -213,8 +213,8 @@ def convert_image_set(parameters, dst_path):
         write_imagedata(test_image_data, test_image_path)
 
 
-def file_extraction_manager(mediar, file, working_dir):
-    path_to_file = os.path.join(mediar, file.name)
+def file_extraction_manager(mediar, file_name, working_dir):
+    path_to_file = os.path.join(mediar, file_name)
 
     with zipfile.ZipFile(path_to_file, 'r') as zip_file:
         zip_file.extractall(working_dir)

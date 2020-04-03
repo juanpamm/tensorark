@@ -37,6 +37,38 @@
                         </div>
                     </div>
                 </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <strong class="card-title">
+                                Progress status
+                            </strong>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-7 offset-md-2">
+                                <label class="form-control-label">File uploading step</label>
+                            </div>
+                            <div class="col-md-2" id="upload_file_gif">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-7 offset-md-2">
+                                <label class="form-control-label">File decompression step</label>
+                            </div>
+                            <div class="col-md-2" id="decompression_file_gif">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-7 offset-md-2">
+                                <label class="form-control-label">Image set convertion step</label>
+                            </div>
+                            <div class="col-md-2" id="convertion_set_gif">
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="card-body">
                     <div class="row">
                         <div id="div_next_button" class="col-md-4 offset-md-4">
@@ -64,8 +96,10 @@
 
     <script>
 
-    let img_uploaded = false;
     let img_set_name = "";
+    const upload_file_gif = $("#upload_file_gif");
+    const decompression_file_gif = $("#decompression_file_gif");
+    const convertion_set_gif = $("#convertion_set_gif");
 
     function upload_image_train() {
             const upload_file_button = $("#upload_file_btn");
@@ -74,6 +108,8 @@
             $('#upload_gif').html('<div class="offset-md-4">' +
                     '<img id="loading_image" class="icon-loading" ' +
                     'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1"/></div>');
+            upload_file_gif.html('<img class="icon-loading" ' +
+                    'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1" height="30" width="30"/>');
     }
 
     $('#upload_file_btn').on('click', function () {
@@ -111,25 +147,72 @@
 
                 $.ajax({
                         type: "POST",
-                        url:"{% url 'load_image_set' %}",
+                        url:"{% url 'upload_image_set' %}",
                         data: img_form_data,
                         cache: false,
                         contentType: false,
                         processData: false,
                         success: function (data) {
-                            const upload_gif = $("#upload_gif");
-                            var json = JSON.parse(data);
-                            img_uploaded = json.upload_val;
-                            img_set_name = json.img_set_name;
-                            upload_gif.html('');
-                            upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
-                                'class="ti-check"></i></div>');
-                            let url = "{% url 'build_improc_nn_template' 'folder_name' %}".
-                            replace(/folder_name/, img_set_name);
-                            $('#div_next_button').html('<a href="' + url + '"' +
-                                'id="next_button" class="btn btn-success"' +
-                                'style="color: white;"> Next <i class="ti-angle-double-right" ' +
-                                'style="margin-left: 8px; color: white;"></i></a>');
+                            let json = JSON.parse(data);
+                            img_set_name = json.working_dir;
+                            upload_file_gif.html('<i style="color:green;" class="ti-check"></i>');
+                            decompression_file_gif.html('<img class="icon-loading" ' +
+                                    'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1" height="30" width="30"/>');
+                            let decomp_data = new FormData();
+                            decomp_data.append("working_dir", img_set_name);
+                            decomp_data.append("file_name", json.file_name);
+
+                            //Ajax request for file decompression
+                            $.ajax({
+                                type: "POST",
+                                url:"{% url 'decompress_image_set' %}",
+                                data: decomp_data,
+                                cache: false,
+                                contentType: false,
+                                processData: false,
+                                success: function (data) {
+                                    let extracted_dir_json = JSON.parse(data);
+                                    let convert_data = new FormData();
+                                    convert_data.append('extracted_dir', extracted_dir_json.extracted_dir);
+                                    convert_data.append('working_dir', img_set_name);
+                                    decompression_file_gif.html('<i style="color:green;" class="ti-check"></i>');
+                                    convertion_set_gif.html('<img class="icon-loading" ' +
+                                            'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1" ' +
+                                            'height="30" width="30"/>');
+
+                                    //Ajax request for image set convertion
+                                    $.ajax({
+                                        type: "POST",
+                                        url:"{% url 'convert_image_set' %}",
+                                        data: convert_data,
+                                        cache: false,
+                                        contentType: false,
+                                        processData: false,
+                                        success: function (data) {
+                                            let return_data = JSON.parse(data);
+                                            if (return_data.success_val === true) {
+                                                $('#upload_gif').html('<i style="color:green;" class="ti-check"></i>');
+                                                convertion_set_gif.html('<i style="color:green;" class="ti-check"></i>');
+                                                let url = "{% url 'build_improc_nn_template' 'folder_name' %}".
+                                                replace(/folder_name/, img_set_name);
+                                                $('#div_next_button').html('<a href="' + url + '"' +
+                                                    'id="next_button" class="btn btn-success"' +
+                                                    'style="color: white;"> Next <i class="ti-angle-double-right" ' +
+                                                    'style="margin-left: 8px; color: white;"></i></a>');
+                                            }
+
+                                        },
+                                        error: function () {
+                                            alert("Something went wrong");
+                                        }
+                                    });
+                                    //End of ajax request for image set convertion
+                                },
+                                error: function () {
+                                    alert("Something went wrong");
+                                }
+                            });
+                            //End of ajax request for file decompression
                         },
                         error: function () {
                             alert("Something went wrong");
@@ -139,15 +222,16 @@
                 alert("Upload your image set");
             }
         });
-
-
     /*
-    const upload_file_button = $("#upload_file_btn");
-    upload_file_button.prop('disabled', false);
-    upload_file_button.show();
-    $('#file_input').val('');
-    $('#upload_gif').html('');
-    */
+    upload_gif.html('');
+                            upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
+                                'class="ti-check"></i></div>');
+                            let url = "{% url 'build_improc_nn_template' 'folder_name' %}".
+                            replace(/folder_name/, img_set_name);
+                            $('#div_next_button').html('<a href="' + url + '"' +
+                                'id="next_button" class="btn btn-success"' +
+                                'style="color: white;"> Next <i class="ti-angle-double-right" ' +
+                                'style="margin-left: 8px; color: white;"></i></a>');*/
 
     </script>
 

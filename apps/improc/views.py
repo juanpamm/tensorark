@@ -142,21 +142,46 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
     return {"accuracy": test_acc, "predictions": predictions, "img_name": img_name_to_send, "first_predict": classes[int(np.argmax(predictions[0]))]}
 
 
-def load_image_set(request):
+def upload_image_set(request):
     file = request.FILES['file']
     action = request.POST.get('action')
     app = request.POST.get('app')
     default_storage.save(file.name, file)
     working_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action, app)
     dst_path = os.path.join(MEDIA_ROOT, working_dir_name)
-    converted_path = os.path.join(dst_path, 'converted_set')
     if not os.path.exists(dst_path):
         os.mkdir(dst_path)
 
+    result = {
+        'working_dir': working_dir_name,
+        'file_name': file.name
+    }
+    json_data = json.dumps(result)
+
+    return JsonResponse(json_data, safe=False)
+
+
+def decompress_image_set(request):
+    file_name = request.POST.get('file_name')
+    working_dir = request.POST.get('working_dir')
+    dst_path = os.path.join(MEDIA_ROOT, working_dir)
     # Extraction of the image set loaded by the user
-    utils.file_extraction_manager(MEDIA_ROOT, file, dst_path)
+    utils.file_extraction_manager(MEDIA_ROOT, file_name, dst_path)
     extracted_dir = os.listdir(dst_path)[0]
+    result = {
+        'extracted_dir': extracted_dir
+    }
+    json_data = json.dumps(result)
+
+    return JsonResponse(json_data, safe=False)
+
+
+def convert_image_set(request):
+    extracted_dir = request.POST.get('extracted_dir')
+    working_dir = request.POST.get('working_dir')
+    dst_path = os.path.join(MEDIA_ROOT, working_dir)
     path_to_extracted_dir = os.path.join(dst_path, extracted_dir)
+    converted_path = os.path.join(dst_path, 'converted_set')
 
     # Paths to training and testing sets
     path_to_training_set = os.path.join(path_to_extracted_dir, 'training')
@@ -175,11 +200,9 @@ def load_image_set(request):
     # Remove image_set folder
     shutil.rmtree(path_to_extracted_dir, ignore_errors=True)
 
-    result = {
-        'upload_val': True,
-        'img_set_name': working_dir_name
-    }
+    result = {'success_val': True}
     json_data = json.dumps(result)
+
     return JsonResponse(json_data, safe=False)
 
 
@@ -243,7 +266,7 @@ def load_model(request):
     if not os.path.exists(dst_path):
         os.mkdir(dst_path)
 
-    utils.file_extraction_manager(MEDIA_ROOT, model_zip, dst_path)
+    utils.file_extraction_manager(MEDIA_ROOT, model_zip.name, dst_path)
     path_to_conf_matrix = os.path.split(dst_path)[1] + '/conf_matrix.png'
     path_to_json_file = os.path.join(dst_path, 'json_nn.json')
     path_to_model_file = os.path.join(dst_path, 'neural_network.h5')

@@ -266,7 +266,7 @@ def load_model(request):
     if not os.path.exists(dst_path):
         os.mkdir(dst_path)
 
-    utils.file_extraction_manager(MEDIA_ROOT, model_zip, dst_path)
+    utils.file_extraction_manager(MEDIA_ROOT, model_zip.name, dst_path)
     path_to_conf_matrix = os.path.split(dst_path)[1] + '/conf_matrix.png'
     path_to_json_file = os.path.join(dst_path, 'json_nn.json')
     path_to_model_file = os.path.join(dst_path, 'neural_network.h5')

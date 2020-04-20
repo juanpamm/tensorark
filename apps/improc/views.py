@@ -31,7 +31,7 @@ def load_model_template(request):
     return render(request, 'improc/load_model.html')
 
 
-def add_layers_to_network(model, nodes, activation_func):
+def improc_add_layers_to_network(model, nodes, activation_func):
     if activation_func == 'relu':
         model.add(keras.layers.Dense(nodes, activation=tf.nn.relu))
     elif activation_func == 'sigmoid':
@@ -44,17 +44,17 @@ def add_layers_to_network(model, nodes, activation_func):
         model.add(keras.layers.Dense(nodes, activation=tf.nn.softmax))
 
 
-def build_neural_network(nlayers, nodes, act_functions, output_act_func):
+def improc_build_neural_network(nlayers, nodes, act_functions, output_act_func):
     model = keras.Sequential([
         keras.layers.Flatten(input_shape=(utils.width, utils.height))
     ])
 
     # Construction of the hidden layers
     for i in range(nlayers):
-        add_layers_to_network(model, nodes[i], act_functions[i])
+        improc_add_layers_to_network(model, nodes[i], act_functions[i])
 
     # Construction of the output layer
-    add_layers_to_network(model, len(utils.class_names), output_act_func)
+    improc_add_layers_to_network(model, len(utils.class_names), output_act_func)
 
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
@@ -62,7 +62,7 @@ def build_neural_network(nlayers, nodes, act_functions, output_act_func):
     return model
 
 
-def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_func, dst_path):
+def improc_train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_func, dst_path):
     with graph.as_default():
         sess = tf.Session()
         path_for_converted_set = os.path.join(dst_path, 'converted_set')
@@ -79,7 +79,7 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
         test_images = test_images / 255.0
 
         # Construction, training and saving of the neural network
-        model = build_neural_network(layers, nodes, act_functions, output_act_func)
+        model = improc_build_neural_network(layers, nodes, act_functions, output_act_func)
         model.fit(train_images, train_labels, epochs=epochs)
         utils.save_model_to_json(checkpoint_path, model)
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
@@ -139,7 +139,8 @@ def train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_fun
         print(np.argmax(predictions[2]))
         print(classes[int(np.argmax(predictions[2]))])
 
-    return {"accuracy": test_acc, "predictions": predictions, "img_name": img_name_to_send, "first_predict": classes[int(np.argmax(predictions[0]))]}
+    return {"accuracy": test_acc, "predictions": predictions, "img_name": img_name_to_send,
+            "first_predict": classes[int(np.argmax(predictions[0]))]}
 
 
 def upload_image_set(request):
@@ -230,7 +231,7 @@ def execute_nn_training(request):
         nodes[i] = int(nodes[i])
 
     # Execute function to train the neural network
-    results = train_neural_network_v2(layers, nodes, activation_functions, epochs, output_act_func, dst_path)
+    results = improc_train_neural_network_v2(layers, nodes, activation_functions, epochs, output_act_func, dst_path)
 
     # Setting the information to be sent to the client
     acc_percentage = results.get("accuracy") * 100

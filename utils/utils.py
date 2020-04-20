@@ -199,11 +199,9 @@ def convert_image_set(parameters, dst_path):
         labels_and_files, parameters[1])
 
     if parameters[1] == 'train':
-
         write_labeldata(train_label_data, train_label_path)
         write_imagedata(train_image_data, train_image_path)
     elif parameters[1] == 'test':
-
         write_labeldata(test_label_data, test_label_path)
         write_imagedata(test_image_data, test_image_path)
     else:
@@ -289,8 +287,7 @@ def set_name_classes(path):
     class_names.clear()
     list_dir = get_subdir(path)
     for label in list_dir:
-        dirname = label
-        class_names.append(dirname)
+        class_names.append(label)
 
 
 def load_data(dst_path):

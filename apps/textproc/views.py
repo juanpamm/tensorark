@@ -1,6 +1,6 @@
 from django.core.files.storage import default_storage
 from django.shortcuts import render
-from django.http import JsonResponse, HttpResponse, Http404
+from django.http import JsonResponse
 from tensorark.settings import MEDIA_ROOT
 from utils import utils
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -11,10 +11,12 @@ import json
 import os.path
 import numpy as np
 import random
+# import pandas
+# from pandas import Series
 import tensorflow as tf
-import shutil
+# import shutil
 import matplotlib
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 matplotlib.use('Agg')
 
 graph = tf.Graph()
@@ -62,13 +64,13 @@ def read_train_text_files(path_to_dataset, data_type):
     # Load the training or test data, according to the value of the data_type variable
     texts = []
     labels = []
-    for i in range(len(class_names)):
-        train_path = os.path.join(path_to_dataset, data_type, class_names[i])
+    for category in ['pos', 'neg']:
+        train_path = os.path.join(path_to_dataset, data_type, category)
         for fname in sorted(os.listdir(train_path)):
             if fname.endswith('.txt'):
                 with open(os.path.join(train_path, fname), encoding="utf8") as f:
                     texts.append(f.read())
-                labels.append(i)
+                labels.append(0 if category == 'neg' else 1)
 
     return texts, labels
 
@@ -78,12 +80,13 @@ def preprocess_train_test_data(path_to_dataset):
     test_texts_and_labels = read_train_text_files(path_to_dataset, 'test')
 
     # Shuffle the training data and labels.
-    random.seed()
+    random.seed(123)
     random.shuffle(train_texts_and_labels[0])
+    random.seed(123)
     random.shuffle(train_texts_and_labels[1])
 
-    return (train_texts_and_labels[0], np.array(train_texts_and_labels[1])), \
-           (test_texts_and_labels[0], np.array(test_texts_and_labels[1]))
+    return ((train_texts_and_labels[0], np.array(train_texts_and_labels[1])),
+            (test_texts_and_labels[0], np.array(test_texts_and_labels[1])))
 
 
 '''
@@ -158,7 +161,7 @@ def ngram_vectorize(train_texts, train_labels, val_texts):
     # Create keyword arguments to pass to the 'tf-idf' vectorizer.
     kwargs = {
             'ngram_range': ngram_range,  # Use 1-grams + 2-grams.
-            'dtype': 'int32',
+            'dtype': 'float32',
             'strip_accents': 'unicode',
             'decode_error': 'replace',
             'analyzer': token_mode,  # Split text into word tokens.
@@ -177,6 +180,7 @@ def ngram_vectorize(train_texts, train_labels, val_texts):
     selector.fit(x_train, train_labels)
     x_train = selector.transform(x_train).astype('float32')
     x_val = selector.transform(x_val).astype('float32')
+
     return x_train, x_val
 
 
@@ -203,7 +207,7 @@ def textproc_build_neural_network(nlayers, nodes, num_classes, act_functions, ou
         textproc_add_layers_to_network(model, nodes[i], act_functions[i])
 
     # Construction of the output layer
-    textproc_add_layers_to_network(model, num_classes, output_act_func)
+    textproc_add_layers_to_network(model, 1, output_act_func)
 
     model.compile(optimizer='adam',
                   loss='binary_crossentropy',
@@ -223,15 +227,19 @@ def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_a
         if not os.path.exists(checkpoint_path):
             os.makedirs(checkpoint_path)
             
-        train, test = preprocess_train_test_data(train_test_set_path)
-        train_texts, test_texts = ngram_vectorize(train[0], train[1], test[0])
+        (train_texts, train_labels), (test_texts, test_labels) = preprocess_train_test_data(train_test_set_path)
+
+        x_train, val_texts = ngram_vectorize(train_texts, train_labels, test_texts)
         # Construction, training and saving of the neural network
         model = textproc_build_neural_network(layers, nodes, len(classes), act_functions, output_act_func,
-                                              train_texts.shape[1:])
-        model.fit(train_texts, train[1], epochs=epochs)
+                                              x_train.shape[1:])
+
+        print('Shape x_Train: ', x_train.shape)
+        print('Shape labels: ', len(train_labels))
+        model.fit(x_train, train_labels, epochs=epochs)
         utils.save_model_to_json(checkpoint_path, model)
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
-        test_loss, test_acc = model.evaluate(test_texts, test[1])
+        test_loss, test_acc = model.evaluate(val_texts, test_labels)
         print('Test accuracy:', test_acc)
 
         # Use the test set for prediction

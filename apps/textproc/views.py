@@ -1,6 +1,8 @@
 from django.core.files.storage import default_storage
 from django.shortcuts import render
-from django.http import JsonResponse, HttpResponse, Http404
+from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
+
 from tensorark.settings import MEDIA_ROOT
 from utils import utils
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -11,8 +13,15 @@ import json
 import os.path
 import numpy as np
 import random
+# import pandas
+# from pandas import Series
 import tensorflow as tf
 import shutil
+import matplotlib
+from matplotlib import pyplot as plt
+# matplotlib.use('Agg')
+
+graph = tf.Graph()
 
 
 def upload_text_nn_template(request):
@@ -24,6 +33,7 @@ def build_textproc_nn_template(request, folder):
     return render(request, 'textproc/build_textproc_nn.html', contexto)
 
 
+@ensure_csrf_cookie
 def load_text_set(request):
     file = request.FILES['file']
     action = request.POST.get('action')
@@ -35,9 +45,8 @@ def load_text_set(request):
         os.mkdir(dst_path)
 
     # Extraction of the text set loaded by the user
-    utils.file_extraction_manager(MEDIA_ROOT, file, dst_path)
-    data = preprocess_train_test_data(dst_path)
-    determine_model_to_use(data)
+    utils.file_extraction_manager(MEDIA_ROOT, file.name, dst_path)
+
     result = {
         'upload_val': True,
         'txt_set_name': working_dir_name
@@ -46,7 +55,15 @@ def load_text_set(request):
     return JsonResponse(json_data, safe=False)
 
 
+def get_classes(path_to_dataset, data_type):
+    data_path = os.path.join(path_to_dataset, data_type)
+    classes_names = os.listdir(data_path)
+
+    return classes_names
+
+
 def read_train_text_files(path_to_dataset, data_type):
+    class_names = get_classes(path_to_dataset, data_type)
     # Load the training or test data, according to the value of the data_type variable
     texts = []
     labels = []
@@ -61,35 +78,46 @@ def read_train_text_files(path_to_dataset, data_type):
     return texts, labels
 
 
-def preprocess_train_test_data(work_dir):
-    work_dir_full_path = os.path.join(MEDIA_ROOT, work_dir)
-    data_dir = os.listdir(work_dir_full_path)[0]
-    train_test_set_path = os.path.join(work_dir_full_path, data_dir)
-
-    train_texts_and_labels = read_train_text_files(train_test_set_path, 'train')
-    test_texts_and_labels = read_train_text_files(train_test_set_path, 'test')
+def preprocess_train_test_data(path_to_dataset):
+    train_texts_and_labels = read_train_text_files(path_to_dataset, 'train')
+    test_texts_and_labels = read_train_text_files(path_to_dataset, 'test')
 
     # Shuffle the training data and labels.
-    random.seed()
+    random.seed(123)
     random.shuffle(train_texts_and_labels[0])
-    random.seed()
+    random.seed(123)
     random.shuffle(train_texts_and_labels[1])
 
-    return (train_texts_and_labels[0], np.array(train_texts_and_labels[1])), \
-           (test_texts_and_labels[0], np.array(test_texts_and_labels[1]))
+    return ((train_texts_and_labels[0], np.array(train_texts_and_labels[1])),
+            (test_texts_and_labels[0], np.array(test_texts_and_labels[1])))
 
 
-def determine_model_to_use(preprocessed_data):
-    words_per_sample = [len(s.split()) for s in preprocessed_data[0][0]]
-    median_num_words_per_sample = np.median(words_per_sample)
-    num_samples = len(preprocessed_data[0][0])
+def execute_model_training(request):
+    # Variables needed for the training process
+    layers = int(request.POST.get('layers'))
+    nodes = json.loads(request.POST.get('nodes'))
+    activation_functions = json.loads(request.POST.get('act_func'))
+    output_act_func = request.POST.get('output_act_func')
+    epochs = int(request.POST.get('epochs'))
+    fold_name = request.POST.get('folder')
+    dst_path = os.path.join(MEDIA_ROOT, fold_name)
+    for i in range(len(nodes)):
+        nodes[i] = int(nodes[i])
 
-    num_samples_num_words_ratio = num_samples / median_num_words_per_sample
+    # Execute function to train the neural network
+    results = textproc_train_neural_network(layers, nodes, activation_functions, epochs, output_act_func, dst_path)
 
-    if num_samples_num_words_ratio < 1500:
-        x_train, x_val = ngram_vectorize(preprocessed_data[0][0], preprocessed_data[0][1], preprocessed_data[1][0])
-    elif num_samples_num_words_ratio >= 1500:
-        print('Sequence model')
+    # Setting the information to be sent to the client
+    acc_percentage = results.get("accuracy") * 100
+    st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
+    training_result = {
+        'net_accuracy': st_percentage,
+        'train_val_loss_img': results.get("train_val_loss_img"),
+        'acc_val_acc_img': results.get("acc_val_acc_img")
+    }
+
+    json_data = json.dumps(training_result)
+    return JsonResponse(json_data, safe=False)
 
 
 def ngram_vectorize(train_texts, train_labels, val_texts):
@@ -122,7 +150,7 @@ def ngram_vectorize(train_texts, train_labels, val_texts):
     # Create keyword arguments to pass to the 'tf-idf' vectorizer.
     kwargs = {
             'ngram_range': ngram_range,  # Use 1-grams + 2-grams.
-            'dtype': 'int32',
+            'dtype': 'float32',
             'strip_accents': 'unicode',
             'decode_error': 'replace',
             'analyzer': token_mode,  # Split text into word tokens.
@@ -141,4 +169,116 @@ def ngram_vectorize(train_texts, train_labels, val_texts):
     selector.fit(x_train, train_labels)
     x_train = selector.transform(x_train).astype('float32')
     x_val = selector.transform(x_val).astype('float32')
+
     return x_train, x_val
+
+
+def textproc_add_layers_to_network(model, nodes, activation_func):
+    if activation_func == 'relu':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.relu))
+    elif activation_func == 'sigmoid':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.sigmoid))
+    elif activation_func == 'tanh':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.tanh))
+    elif activation_func == 'elu':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.elu))
+    elif activation_func == 'softmax':
+        model.add(keras.layers.Dense(nodes, activation=tf.nn.softmax))
+
+
+def textproc_build_neural_network(nlayers, nodes, num_classes, act_functions, output_act_func, input_shape):
+    model = keras.Sequential([
+        keras.layers.Dropout(rate=0.0, input_shape=input_shape)
+    ])
+
+    # Construction of the hidden layers
+    for i in range(nlayers):
+        textproc_add_layers_to_network(model, nodes[i], act_functions[i])
+
+    # Construction of the output layer
+    textproc_add_layers_to_network(model, 1, output_act_func)
+
+    model.compile(optimizer='adam',
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    return model
+
+
+def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_act_func, working_dir_name):
+    with graph.as_default():
+        sess = tf.compat.v1.Session()
+        work_dir_full_path = os.path.join(MEDIA_ROOT, working_dir_name)
+        data_dir = os.listdir(work_dir_full_path)[0]
+        train_test_set_path = os.path.join(work_dir_full_path, data_dir)
+        classes = get_classes(train_test_set_path, 'train')              
+        # Checkpoint for network
+        checkpoint_path = os.path.join(work_dir_full_path, 'saved_model')
+        if not os.path.exists(checkpoint_path):
+            os.makedirs(checkpoint_path)
+            
+        (train_texts, train_labels), (test_texts, test_labels) = preprocess_train_test_data(train_test_set_path)
+
+        x_train, val_texts = ngram_vectorize(train_texts, train_labels, test_texts)
+        # Construction, training and saving of the neural network
+        model = textproc_build_neural_network(layers, nodes, len(classes), act_functions, output_act_func,
+                                              x_train.shape[1:])
+
+        history = model.fit(
+                    x_train,
+                    train_labels,
+                    epochs=epochs,
+                    validation_data=(val_texts, test_labels))
+        utils.save_model_to_json(checkpoint_path, model)
+        model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
+        test_loss, test_acc = model.evaluate(val_texts, test_labels)
+
+        '''
+        predictions = model.predict(val_texts)
+        print(val_texts[0])
+        print(predictions[0])
+        print(np.argmax(predictions[0]))
+        '''
+
+        # Code to create plot images
+        history_dict = history.history
+
+        acc = history_dict['accuracy']
+        val_acc = history_dict['val_accuracy']
+        loss = history_dict['loss']
+        val_loss = history_dict['val_loss']
+        epochs = range(1, len(acc) + 1)
+        working_dir_folder_name = os.path.split(working_dir_name)[1]
+
+        train_val_loss_img = "train_val_loss.png"
+        train_val_loss_img_partial_path = working_dir_folder_name + '/' + train_val_loss_img
+        train_val_loss_img_path = os.path.join(working_dir_name, train_val_loss_img)
+
+        # "bo" is for "blue dot"
+        plt.plot(epochs, loss, 'bo', label='Training loss')
+        # b is for "solid blue line"
+        plt.plot(epochs, val_loss, 'b', label='Validation loss')
+        plt.title('Training and validation loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.savefig(train_val_loss_img_path, format='png', bbox_inches="tight")
+        shutil.copy(train_val_loss_img_path, checkpoint_path)
+        plt.clf()
+
+        acc_val_accu_img = "acc_val_accu.png"
+        acc_val_accu_img_partial_path = working_dir_folder_name + '/' + acc_val_accu_img
+        acc_val_accu_img_path = os.path.join(working_dir_name, acc_val_accu_img)
+        plt.plot(epochs, acc, 'bo', label='Training acc')
+        plt.plot(epochs, val_acc, 'b', label='Validation acc')
+        plt.title('Training and validation accuracy')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy')
+        plt.legend(loc='lower right')
+        plt.savefig(acc_val_accu_img_path, format='png', bbox_inches="tight")
+        shutil.copy(acc_val_accu_img_path, checkpoint_path)
+        plt.clf()
+
+        utils.compress_model_folder(working_dir_name)
+
+    return {"accuracy": test_acc, "train_val_loss_img": train_val_loss_img_partial_path,
+            "acc_val_acc_img": acc_val_accu_img_partial_path}

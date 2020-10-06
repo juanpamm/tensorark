@@ -64,7 +64,7 @@ def improc_build_neural_network(nlayers, nodes, act_functions, output_act_func):
 
 def improc_train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_func, dst_path):
     with graph.as_default():
-        sess = tf.Session()
+        sess = tf.compat.v1.Session()
         path_for_converted_set = os.path.join(dst_path, 'converted_set')
         # Checkpoint for network
         checkpoint_path = os.path.join(dst_path, 'saved_model')
@@ -91,7 +91,7 @@ def improc_train_neural_network_v2(layers, nodes, act_functions, epochs, output_
         predicts = model.predict_classes(test_images)
 
         # Build confusion matrix
-        con_mat = tf.confusion_matrix(labels=test_labels, predictions=predicts)
+        con_mat = tf.compat.v1.confusion_matrix(labels=test_labels, predictions=predicts)
         con_mat_val = con_mat.eval(session=sess)
 
         # Path to confusion matrix image

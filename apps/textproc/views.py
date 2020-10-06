@@ -1,6 +1,8 @@
 from django.core.files.storage import default_storage
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
+
 from tensorark.settings import MEDIA_ROOT
 from utils import utils
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -14,10 +16,10 @@ import random
 # import pandas
 # from pandas import Series
 import tensorflow as tf
-# import shutil
+import shutil
 import matplotlib
-# from matplotlib import pyplot as plt
-matplotlib.use('Agg')
+from matplotlib import pyplot as plt
+# matplotlib.use('Agg')
 
 graph = tf.Graph()
 
@@ -31,6 +33,7 @@ def build_textproc_nn_template(request, folder):
     return render(request, 'textproc/build_textproc_nn.html', contexto)
 
 
+@ensure_csrf_cookie
 def load_text_set(request):
     file = request.FILES['file']
     action = request.POST.get('action')
@@ -89,21 +92,6 @@ def preprocess_train_test_data(path_to_dataset):
             (test_texts_and_labels[0], np.array(test_texts_and_labels[1])))
 
 
-'''
-def execute_model_training(preprocessed_data):
-    words_per_sample = [len(s.split()) for s in preprocessed_data[0][0]]
-    median_num_words_per_sample = np.median(words_per_sample)
-    num_samples = len(preprocessed_data[0][0])
-
-    num_samples_num_words_ratio = num_samples / median_num_words_per_sample
-
-    if num_samples_num_words_ratio < 1500:
-        print('Neural Network')
-    elif num_samples_num_words_ratio >= 1500:
-        print('Sequence model')
-'''
-
-
 def execute_model_training(request):
     # Variables needed for the training process
     layers = int(request.POST.get('layers'))
@@ -124,7 +112,8 @@ def execute_model_training(request):
     st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
     training_result = {
         'net_accuracy': st_percentage,
-        'prediction': results.get("first_predict")
+        'train_val_loss_img': results.get("train_val_loss_img"),
+        'acc_val_acc_img': results.get("acc_val_acc_img")
     }
 
     json_data = json.dumps(training_result)
@@ -217,7 +206,7 @@ def textproc_build_neural_network(nlayers, nodes, num_classes, act_functions, ou
 
 def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_act_func, working_dir_name):
     with graph.as_default():
-        sess = tf.Session()
+        sess = tf.compat.v1.Session()
         work_dir_full_path = os.path.join(MEDIA_ROOT, working_dir_name)
         data_dir = os.listdir(work_dir_full_path)[0]
         train_test_set_path = os.path.join(work_dir_full_path, data_dir)
@@ -234,27 +223,62 @@ def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_a
         model = textproc_build_neural_network(layers, nodes, len(classes), act_functions, output_act_func,
                                               x_train.shape[1:])
 
-        print('Shape x_Train: ', x_train.shape)
-        print('Shape labels: ', len(train_labels))
-        model.fit(x_train, train_labels, epochs=epochs)
+        history = model.fit(
+                    x_train,
+                    train_labels,
+                    epochs=epochs,
+                    validation_data=(val_texts, test_labels))
         utils.save_model_to_json(checkpoint_path, model)
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
         test_loss, test_acc = model.evaluate(val_texts, test_labels)
-        print('Test accuracy:', test_acc)
 
-        # Use the test set for prediction
-        predictions = model.predict(test_texts)
-        predicts = model.predict_classes(test_texts)
-
+        '''
+        predictions = model.predict(val_texts)
+        print(val_texts[0])
         print(predictions[0])
         print(np.argmax(predictions[0]))
-        print(classes[int(np.argmax(predictions[0]))])
-        print(predictions[1])
-        print(np.argmax(predictions[1]))
-        print(classes[int(np.argmax(predictions[1]))])
-        print(predictions[2])
-        print(np.argmax(predictions[2]))
-        print(classes[int(np.argmax(predictions[2]))])
+        '''
 
-    return {"accuracy": test_acc, "predictions": predictions, 
-            "first_predict": classes[int(np.argmax(predictions[0]))]}
+        # Code to create plot images
+        history_dict = history.history
+
+        acc = history_dict['accuracy']
+        val_acc = history_dict['val_accuracy']
+        loss = history_dict['loss']
+        val_loss = history_dict['val_loss']
+        epochs = range(1, len(acc) + 1)
+        working_dir_folder_name = os.path.split(working_dir_name)[1]
+
+        train_val_loss_img = "train_val_loss.png"
+        train_val_loss_img_partial_path = working_dir_folder_name + '/' + train_val_loss_img
+        train_val_loss_img_path = os.path.join(working_dir_name, train_val_loss_img)
+
+        # "bo" is for "blue dot"
+        plt.plot(epochs, loss, 'bo', label='Training loss')
+        # b is for "solid blue line"
+        plt.plot(epochs, val_loss, 'b', label='Validation loss')
+        plt.title('Training and validation loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.savefig(train_val_loss_img_path, format='png', bbox_inches="tight")
+        shutil.copy(train_val_loss_img_path, checkpoint_path)
+        plt.clf()
+
+        acc_val_accu_img = "acc_val_accu.png"
+        acc_val_accu_img_partial_path = working_dir_folder_name + '/' + acc_val_accu_img
+        acc_val_accu_img_path = os.path.join(working_dir_name, acc_val_accu_img)
+        plt.plot(epochs, acc, 'bo', label='Training acc')
+        plt.plot(epochs, val_acc, 'b', label='Validation acc')
+        plt.title('Training and validation accuracy')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy')
+        plt.legend(loc='lower right')
+        plt.savefig(acc_val_accu_img_path, format='png', bbox_inches="tight")
+        shutil.copy(acc_val_accu_img_path, checkpoint_path)
+        plt.clf()
+
+        utils.compress_model_folder(working_dir_name)
+
+    return {"accuracy": test_acc, "train_val_loss_img": train_val_loss_img_partial_path,
+            "acc_val_acc_img": acc_val_accu_img_partial_path}

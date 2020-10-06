@@ -149,6 +149,16 @@
             </div>
         </div>
         <div class="row" style="margin-top: 80px">
+            <div id="train_loss_val_plt" class="col-md-8 offset-md-2">
+
+            </div>
+        </div>
+        <div class="row" style="margin-top: 80px">
+            <div id="acc_val_accu_plt" class="col-md-8 offset-md-2">
+
+            </div>
+        </div>
+        <div class="row" style="margin-top: 80px">
             <div id="confusion_matrix" class="col-md-8 offset-md-2">
 
             </div>
@@ -294,8 +304,7 @@
                         result_div.html('<textarea class="form-control" id="result_area" rows="3" ' +
                                             'placeholder="Accuracy of the network"\n' +
                                             'tabindex="1" readonly></textarea>');
-                        $('#result_area').val("Accuracy: " + json.net_accuracy + "% \n" + "First prediction: " +
-                                                json.prediction);
+                        $('#result_area').val("Accuracy: " + json.net_accuracy);
                         $('#result_area').focus();
                         $('#train_button').prop('hidden', true);
                         $('#train_other_button').prop('hidden', false);
@@ -305,9 +314,11 @@
                         $('#div_download').prop('hidden', false);
                         $('#download_model_div').html('<a href="' + url + '"' + 'id="download_model" ' +
                             'class="btn btn-success" style="color: white;"> Download <i class="ti-download"' +
-                            'style="margin-left: 8px; color: white;"></i></a>');
-                        $('#confusion_matrix').html('<img alt="Confusion matrix" src="/media/' + json.img_name + '" ' +
-                            'height="600" width="600">');*/
+                            'style="margin-left: 8px; color: white;"></i></a>');*/
+                        $('#train_loss_val_plt').html('<img alt="Loss plot" src="/media/' +
+                            json.train_val_loss_img + '" height="600" width="600">');
+                        $('#acc_val_accu_plt').html('<img alt="Accuracy plot" src="/media/' +
+                            json.acc_val_acc_img + '" height="600" width="600">');
                     },
                     error: function () {
                         alert("There was an error in the server");

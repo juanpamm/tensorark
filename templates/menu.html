@@ -16,6 +16,8 @@
     <ul class="sub-menu children dropdown-menu">
         <li class="{% if 'text_proc' in request.path %} show {% endif %}"><i class="fa fa-wrench"></i>
             <a href="{% url 'upload_text_nn_template' %}">Build neural network</a></li>
+        <li class="{% if 'text_proc' in request.path %} show {% endif %}"><i class="fa fa-upload"></i>
+            <a href="#">Load neural network</a></li>
     </ul>
 </li>
 {% comment %}

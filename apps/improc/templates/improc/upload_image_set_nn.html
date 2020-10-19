@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block body_block %}
-    <div class="col-lg-6 offset-lg-3">
+    <div class="col-md-9 col-lg-9 col-xl-7 offset-md-2 offset-lg-3 offset-xl-2">
                 <div class="card">
                     <div class="card-header">
                         <strong class="card-title">
@@ -105,8 +105,8 @@
             const upload_file_button = $("#upload_file_btn");
             upload_file_button.prop('disabled', true);
             upload_file_button.hide();
-            $('#upload_gif').html('<div class="offset-md-4">' +
-                    '<img id="loading_image" class="icon-loading" ' +
+            $('#upload_gif').html('<div>' +
+                    '<img id="loading_image" class="icon-loading" style="width: 50%; height: 50%;"' +
                     'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1"/></div>');
             upload_file_gif.html('<img class="icon-loading" ' +
                     'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1" height="30" width="30"/>');

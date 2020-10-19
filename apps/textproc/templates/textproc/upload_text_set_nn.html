@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block body_block %}
-    <div class="col-lg-9 offset-lg-2">
+    <div class="col-md-9 col-lg-9 col-xl-7 offset-md-2 offset-lg-3 offset-xl-2">
         <div class="card">
             <div class="card-header">
                 <strong class="card-title">
@@ -18,14 +18,14 @@
                 </strong>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    <div class="col col-md-3">
+                <div class="row">
+                    <div class="col-md-3">
                         <label for="file_input" class=" form-control-label">File input</label>
                     </div>
-                    <div class="col-12 col-md-7">
+                    <div class="col-md-6">
                         <input type="file" id="file_input" name="fileinp" class="form-control-file">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2" id="upload_file_div">
                         <button type="button" id="upload_file_btn" class="btn btn-info">
                             <i class="ti-upload"></i></button>
                     </div>
@@ -62,11 +62,11 @@
     let img_set_name = "";
 
     function upload_image_train() {
-        const upload_file_button = $("#upload_file_btn");
-        upload_file_button.prop('disabled', true);
-        upload_file_button.hide();
-        $('#upload_gif').html('<div class="offset-md-4">' +
-                '<img id="loading_image" class="icon-loading" ' +
+        const upload_file_div = $("#upload_file_div");
+        //upload_file_button.prop('disabled', true);
+        upload_file_div.hide();
+        $('#upload_gif').html('<div>' +
+                '<img id="loading_image" class="icon-loading" style="width: 50%; height: 50%;"' +
                 'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1"/></div>');
     }
 
@@ -117,7 +117,7 @@
                         img_uploaded = json.upload_val;
                         img_set_name = json.txt_set_name;
                         upload_gif.html('');
-                        upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
+                        upload_gif.html('<div class="offset-md-2"><i style="color:green;" ' +
                             'class="ti-check"></i></div>');
 
                         let url = "{% url 'build_textproc_nn_template' 'folder_name' %}".

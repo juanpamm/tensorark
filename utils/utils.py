@@ -56,7 +56,10 @@ import imageio
 import sys
 import os
 import random
+import pandas
+import seaborn
 from natsort import natsorted
+from matplotlib import pyplot as plt
 
 height = 0
 width = 0
@@ -330,3 +333,39 @@ def compress_model_folder(path_to_working_dir):
         folder = root[length:]
         for file in files:
             ziph.write(os.path.join(root, file), os.path.join(folder, file))
+
+
+def confusion_matrix_plotter(con_mat_val, classes, con_matrix_img_path, checkpoint_path):
+    con_mat_df = pandas.DataFrame(con_mat_val, index=classes, columns=classes)
+    plt.figure(figsize=(8, 8))
+    seaborn.heatmap(con_mat_df, annot=True, cmap=plt.cm.Blues, fmt="d")
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.savefig(con_matrix_img_path, format='png', bbox_inches='tight')
+    shutil.copy(con_matrix_img_path, checkpoint_path)
+    plt.clf()
+
+
+def loss_accuracy_plotter(epochs, loss, val_loss, acc, val_acc, checkpoint_path, loss_plot_img_path,
+                          accuracy_plot_img_path):
+
+    plt.plot(epochs, loss, 'b', label='Training loss', color='yellow')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss', color='blue')
+    plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.savefig(loss_plot_img_path, format='png', bbox_inches="tight")
+    shutil.copy(loss_plot_img_path, checkpoint_path)
+    plt.clf()
+
+    plt.plot(epochs, acc, 'b', label='Training acc', color='yellow')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc', color='blue')
+    plt.title('Training and validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend(loc='lower right')
+    plt.savefig(accuracy_plot_img_path, format='png', bbox_inches="tight")
+    shutil.copy(accuracy_plot_img_path, checkpoint_path)
+    plt.clf()

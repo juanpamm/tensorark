@@ -145,14 +145,21 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-md-1">
-                <label class="form-control-label" id="label_result_area" for="result_area" hidden> Results </label>
+            <div id="result_div" class="col-md-10 col-lg-11" tabindex="1">
             </div>
-            <div id="result_div" class="col-md-10" tabindex="1">
+        </div>
+        <div class="row" style="margin-top: 60px">
+            <div id="confusion_matrix" class="col-lg-8 col-md-8 offset-md-2 offset-lg-3">
+
             </div>
         </div>
         <div class="row" style="margin-top: 80px">
-            <div id="confusion_matrix" class="col-md-8 offset-md-2">
+            <div id="train_val_loss_plt" class="col-lg-8 col-md-8 offset-md-2 offset-lg-3">
+
+            </div>
+        </div>
+        <div class="row" style="margin-top: 80px">
+            <div id="train_val_accuracy_plt" class="col-lg-8 col-md-8 offset-md-2 offset-lg-3">
 
             </div>
         </div>
@@ -192,7 +199,7 @@
         let table = $('#node-table').DataTable();
 
         function loading_gif_train() {
-            $('#result_div').html('<div class="offset-md-4">' +
+            $('#result_div').html('<div class="offset-md-4 offset-lg-5">' +
                     '<img id="loading_image" class="icon-loading" ' +
                     'src="{% static 'gif/lg.circle-slack-loading-icon.gif' %}" tabindex="1"/></div>');
             $("html, body").animate({ scrollTop: $(document).height() }, 1000);
@@ -292,14 +299,25 @@
                     success: function (data) {
                         let json = JSON.parse(data);
                         const result_div = $('#result_div');
-                        $('#label_result_area').prop('hidden', false);
+                        let accuracy = json.net_accuracy;
+                        let color_acc_card;
+
+                        if (accuracy >= 70) {
+                            color_acc_card = 5;
+                        }else if (accuracy >= 50 && accuracy < 70) {
+                            color_acc_card = 3;
+                        }else {
+                            color_acc_card = 4;
+                        }
                         result_div.html('');
-                        result_div.html('<textarea class="form-control" id="result_area" rows="3" ' +
-                                            'placeholder="Accuracy of the network"\n' +
-                                            'tabindex="1" readonly></textarea>');
-                        $('#result_area').val("Accuracy: " + json.net_accuracy + "% \n" + "First prediction: " +
-                                                json.prediction);
-                        $('#result_area').focus();
+                        result_div.html('<div class="card bg-flat-color-' + color_acc_card +
+                                            ' text-light col-lg-2 offset-md-4 offset-lg-5">\n' +
+                                            '<div class="card-body" style="margin-left: 15px;">\n' +
+                                                '<div class="h4 m-0">' + accuracy + '% </div>\n'+
+                                                '<div>Accuracy</div>'+
+                                            '</div>\n'+
+                                        '</div>');
+
                         $('#train_button').prop('hidden', true);
                         $('#train_other_button').prop('hidden', false);
                         let url = "{% url 'download_saved_model' 'folder_name' %}".
@@ -310,6 +328,10 @@
                             'style="margin-left: 8px; color: white;"></i></a>');
                         $('#confusion_matrix').html('<img alt="Confusion matrix" src="/media/' + json.img_name + '" ' +
                             'height="600" width="600">');
+                        $('#train_val_loss_plt').html('<img alt="Loss plot" src="/media/' +
+                            json.loss_plot + '" height="600" width="600">');
+                        $('#train_val_accuracy_plt').html('<img alt="Accuracy plot" src="/media/' +
+                            json.accuracy_plot + '" height="600" width="600">');
                     },
                     error: function () {
                         alert("There was an error in the server");

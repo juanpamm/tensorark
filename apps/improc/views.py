@@ -66,6 +66,7 @@ def improc_train_neural_network_v2(layers, nodes, act_functions, epochs, output_
     with graph.as_default():
         sess = tf.compat.v1.Session()
         path_for_converted_set = os.path.join(dst_path, 'converted_set')
+        working_dir = os.path.split(dst_path)[1]
         # Checkpoint for network
         checkpoint_path = os.path.join(dst_path, 'saved_model')
         if not os.path.exists(checkpoint_path):
@@ -80,67 +81,51 @@ def improc_train_neural_network_v2(layers, nodes, act_functions, epochs, output_
 
         # Construction, training and saving of the neural network
         model = improc_build_neural_network(layers, nodes, act_functions, output_act_func)
-        model.fit(train_images, train_labels, epochs=epochs)
+        history = model.fit(train_images, train_labels, epochs=epochs, validation_data=(test_images, test_labels))
         utils.save_model_to_json(checkpoint_path, model)
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
         test_loss, test_acc = model.evaluate(test_images, test_labels)
-        print('Test accuracy:', test_acc)
 
         # Use the test set for prediction
-        predictions = model.predict(test_images)
-        predicts = model.predict_classes(test_images)
+        predicts = np.argmax(model.predict(test_images), axis=-1)
 
         # Build confusion matrix
         con_mat = tf.compat.v1.confusion_matrix(labels=test_labels, predictions=predicts)
         con_mat_val = con_mat.eval(session=sess)
 
         # Path to confusion matrix image
-        con_matrix_img_name = 'conf_matrix.png'
+        con_matrix_img_name = 'improc_conf_matrix.png'
         con_matrix_img_path = os.path.join(dst_path, con_matrix_img_name)
-        working_dir = os.path.split(dst_path)[1]
         img_name_to_send = working_dir + '/' + con_matrix_img_name
 
-        con_mat_df = pandas.DataFrame(con_mat_val, index=classes, columns=classes)
-        plt.figure(figsize=(8, 8))
-        seaborn.heatmap(con_mat_df, annot=True, cmap=plt.cm.Blues, fmt="d")
-        plt.tight_layout()
-        plt.ylabel('True label')
-        plt.xlabel('Predicted label')
-        plt.savefig(con_matrix_img_path, format='png', bbox_inches='tight')
-        shutil.copy(con_matrix_img_path, checkpoint_path)
+        utils.confusion_matrix_plotter(con_mat_val, classes, con_matrix_img_path, checkpoint_path)
+
+        # Code to create plot images
+        history_dict = history.history
+
+        acc = history_dict['accuracy']
+        val_acc = history_dict['val_accuracy']
+        loss = history_dict['loss']
+        val_loss = history_dict['val_loss']
+        epochs = range(1, len(acc) + 1)
+
+        # Path to loss plot
+        loss_plot_img_name = 'improc_loss_plot.png'
+        loss_plot_img_path = os.path.join(dst_path, loss_plot_img_name)
+        loss_plot_path_to_send = working_dir + '/' + loss_plot_img_name
+
+        # Path to accuracy plot
+        acc_val_accu_img = "improc_accuracy_plot.png"
+        accuracy_plot_img_path = os.path.join(dst_path, acc_val_accu_img)
+        accuracy_plot_path_to_send = working_dir + '/' + acc_val_accu_img
+
+        utils.loss_accuracy_plotter(epochs, loss, val_loss, acc, val_acc, checkpoint_path, loss_plot_img_path,
+                                    accuracy_plot_img_path)
+
         utils.compress_model_folder(dst_path)
 
-        '''
-        plt.figure()
-        plt.imshow(test_images[0])
-        plt.colorbar()
-        plt.grid(False)
-        plt.show()
-
-        plt.figure()
-        plt.imshow(test_images[1])
-        plt.colorbar()
-        plt.grid(False)
-        plt.show()
-
-        plt.figure()
-        plt.imshow(test_images[2])
-        plt.colorbar()
-        plt.grid(False)
-        plt.show()
-        '''
-        print(predictions[0])
-        print(np.argmax(predictions[0]))
-        print(classes[int(np.argmax(predictions[0]))])
-        print(predictions[1])
-        print(np.argmax(predictions[1]))
-        print(classes[int(np.argmax(predictions[1]))])
-        print(predictions[2])
-        print(np.argmax(predictions[2]))
-        print(classes[int(np.argmax(predictions[2]))])
-
-    return {"accuracy": test_acc, "predictions": predictions, "img_name": img_name_to_send,
-            "first_predict": classes[int(np.argmax(predictions[0]))]}
+    return {"accuracy": test_acc, "img_name": img_name_to_send, "loss_plot_name": loss_plot_path_to_send,
+            "accuracy_plot_name": accuracy_plot_path_to_send}
 
 
 def upload_image_set(request):
@@ -238,8 +223,9 @@ def execute_nn_training(request):
     st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
     training_result = {
         'net_accuracy': st_percentage,
-        'prediction': results.get("first_predict"),
-        'img_name': results.get("img_name")
+        'img_name': results.get("img_name"),
+        'loss_plot': results.get("loss_plot_name"),
+        'accuracy_plot': results.get("accuracy_plot_name")
     }
 
     json_data = json.dumps(training_result)

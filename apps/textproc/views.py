@@ -13,13 +13,11 @@ import json
 import os.path
 import numpy as np
 import random
-# import pandas
-# from pandas import Series
 import tensorflow as tf
 import shutil
-import matplotlib
+import pandas
+import seaborn
 from matplotlib import pyplot as plt
-# matplotlib.use('Agg')
 
 graph = tf.Graph()
 
@@ -112,8 +110,9 @@ def execute_model_training(request):
     st_percentage = '{number:.{digits}f}'.format(number=acc_percentage, digits=2)
     training_result = {
         'net_accuracy': st_percentage,
-        'train_val_loss_img': results.get("train_val_loss_img"),
-        'acc_val_acc_img': results.get("acc_val_acc_img")
+        'loss_plot': results.get("loss_plot_img_name"),
+        'accuracy_plot': results.get("accuracy_plot_img_name"),
+        'conf_matrix': results.get("conf_matrix_name")
     }
 
     json_data = json.dumps(training_result)
@@ -238,6 +237,21 @@ def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_a
         print(predictions[0])
         print(np.argmax(predictions[0]))
         '''
+        working_dir_folder_name = os.path.split(working_dir_name)[1]
+
+        # Use the test set for prediction
+        predicts = (model.predict(val_texts) > 0.5).astype("int32")
+
+        # Build confusion matrix
+        con_mat = tf.compat.v1.confusion_matrix(labels=test_labels, predictions=predicts)
+        con_mat_val = con_mat.eval(session=sess)
+
+        # Path to confusion matrix image
+        con_matrix_img_name = 'textproc_conf_matrix.png'
+        con_matrix_img_path = os.path.join(working_dir_name, con_matrix_img_name)
+        img_name_to_send = working_dir_folder_name + '/' + con_matrix_img_name
+
+        utils.confusion_matrix_plotter(con_mat_val, classes, con_matrix_img_path, checkpoint_path)
 
         # Code to create plot images
         history_dict = history.history
@@ -247,38 +261,19 @@ def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_a
         loss = history_dict['loss']
         val_loss = history_dict['val_loss']
         epochs = range(1, len(acc) + 1)
-        working_dir_folder_name = os.path.split(working_dir_name)[1]
 
-        train_val_loss_img = "train_val_loss.png"
-        train_val_loss_img_partial_path = working_dir_folder_name + '/' + train_val_loss_img
-        train_val_loss_img_path = os.path.join(working_dir_name, train_val_loss_img)
+        loss_plot_img_name = "train_val_loss.png"
+        loss_plot_img_partial_path = working_dir_folder_name + '/' + loss_plot_img_name
+        loss_plot_img_path = os.path.join(working_dir_name, loss_plot_img_name)
 
-        # "bo" is for "blue dot"
-        plt.plot(epochs, loss, 'bo', label='Training loss')
-        # b is for "solid blue line"
-        plt.plot(epochs, val_loss, 'b', label='Validation loss')
-        plt.title('Training and validation loss')
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss')
-        plt.legend()
-        plt.savefig(train_val_loss_img_path, format='png', bbox_inches="tight")
-        shutil.copy(train_val_loss_img_path, checkpoint_path)
-        plt.clf()
+        accuracy_plot_img_name = "acc_val_accu.png"
+        accuracy_plot_img_partial_path = working_dir_folder_name + '/' + accuracy_plot_img_name
+        accuracy_plot_img_path = os.path.join(working_dir_name, accuracy_plot_img_name)
 
-        acc_val_accu_img = "acc_val_accu.png"
-        acc_val_accu_img_partial_path = working_dir_folder_name + '/' + acc_val_accu_img
-        acc_val_accu_img_path = os.path.join(working_dir_name, acc_val_accu_img)
-        plt.plot(epochs, acc, 'bo', label='Training acc')
-        plt.plot(epochs, val_acc, 'b', label='Validation acc')
-        plt.title('Training and validation accuracy')
-        plt.xlabel('Epochs')
-        plt.ylabel('Accuracy')
-        plt.legend(loc='lower right')
-        plt.savefig(acc_val_accu_img_path, format='png', bbox_inches="tight")
-        shutil.copy(acc_val_accu_img_path, checkpoint_path)
-        plt.clf()
+        utils.loss_accuracy_plotter(epochs, loss, val_loss, acc, val_acc, checkpoint_path, loss_plot_img_path,
+                                    accuracy_plot_img_path)
 
         utils.compress_model_folder(working_dir_name)
 
-    return {"accuracy": test_acc, "train_val_loss_img": train_val_loss_img_partial_path,
-            "acc_val_acc_img": acc_val_accu_img_partial_path}
+    return {"accuracy": test_acc, "conf_matrix_name": img_name_to_send,
+            "loss_plot_img_name": loss_plot_img_partial_path, "accuracy_plot_img_name": accuracy_plot_img_partial_path}

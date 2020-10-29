@@ -4,23 +4,22 @@ from django.http import JsonResponse, HttpResponse, Http404
 from tensorark.settings import MEDIA_ROOT
 from utils import utils
 from tensorflow import keras
+from PIL import Image
 import json
 import os.path
 import numpy as np
 import tensorflow as tf
 import shutil
-import pandas
-import seaborn
 import matplotlib
-from matplotlib import pyplot as plt
 matplotlib.use('Agg')
 
 graph = tf.Graph()
+loaded_neural_network = keras.Sequential()
 
 
 def build_improc_nn_template(request, folder):
-    contexto = {'folder': folder}
-    return render(request, 'improc/build_improc_nn.html', contexto)
+    context = {'folder': folder}
+    return render(request, 'improc/build_improc_nn.html', context)
 
 
 def upload_image_nn_template(request):
@@ -254,35 +253,82 @@ def load_model(request):
         os.mkdir(dst_path)
 
     utils.file_extraction_manager(MEDIA_ROOT, model_zip.name, dst_path)
-    path_to_conf_matrix = os.path.split(dst_path)[1] + '/conf_matrix.png'
+    path_to_conf_matrix = os.path.split(dst_path)[1] + '/improc_conf_matrix.png'
+    path_to_loss_plot = os.path.split(dst_path)[1] + '/improc_loss_plot.png'
+    path_to_acc_plot = os.path.split(dst_path)[1] + '/improc_accuracy_plot.png'
     path_to_json_file = os.path.join(dst_path, 'json_nn.json')
     path_to_model_file = os.path.join(dst_path, 'neural_network.h5')
 
     f = open(path_to_json_file, "r")
-    f_content = json.loads(f.read())['config']
+    f_content = json.loads(f.read())
     f.close()
-    len_f_content = len(f_content)
+    classes = f_content['classes']
+    f_layers = f_content['config']['layers']
+    len_f_layers = len(f_layers)
 
     result = {
-        'num_layers': len_f_content,
-        'img_set_name': load_dir_name,
+        'num_layers': len_f_layers,
+        'load_dir_name': load_dir_name,
         'hidden_layers': [],
-        'img_name': path_to_conf_matrix
+        'conf_matrix': path_to_conf_matrix,
+        'loss_plot': path_to_loss_plot,
+        'accuracy_plot': path_to_acc_plot
     }
 
-    for i in range(len_f_content):
+    for i in range(len_f_layers):
         if i == 0:
-            result['input_layer'] = [f_content[i]['config']['batch_input_shape'][1],
-                                     f_content[i]['config']['batch_input_shape'][2]]
-        elif i == (len_f_content - 1):
-            result['output_layer'] = [f_content[i]['config']['units'],
-                                      activation_funcs.get(f_content[i]['config']['activation'])]
-        else:
-            result['hidden_layers'].append([f_content[i]['config']['units'],
-                                            activation_funcs.get(f_content[i]['config']['activation'])])
+            result['input_layer'] = [f_layers[i]['config']['batch_input_shape'][1],
+                                     f_layers[i]['config']['batch_input_shape'][2]]
+        elif i == (len_f_layers - 1):
+            result['output_layer'] = [f_layers[i]['config']['units'],
+                                      activation_funcs.get(f_layers[i]['config']['activation'])]
+        elif i != 1:
+            result['hidden_layers'].append([f_layers[i]['config']['units'],
+                                            activation_funcs.get(f_layers[i]['config']['activation'])])
 
+    result['classes'] = classes
+    global loaded_neural_network
     loaded_neural_network = keras.models.load_model(path_to_model_file)
-    # loaded_neural_network.summary()
 
     json_data = json.dumps(result)
+    return JsonResponse(json_data, safe=False)
+
+
+def get_images_to_predict(path_to_images):
+    # load the image
+    list_of_images = os.listdir(path_to_images)
+    print(list_of_images)
+    list_of_converted_images = []
+    for img in list_of_images:
+        image = Image.open(os.path.join(path_to_images, img))
+        image = image.convert("L")
+        arr_image = np.array(image)
+        new_arr_image = (np.expand_dims(arr_image, 0))
+        new_arr_image = new_arr_image / 255.0
+        list_of_converted_images.append(new_arr_image)
+
+    return list_of_converted_images
+
+
+def predict_with_loaded_model(request):
+    dir_name = request.POST.get('dir_name')
+    test_model_zip = request.FILES['file']
+    load_model_directory = os.path.join(MEDIA_ROOT, dir_name)
+
+    default_storage.save(test_model_zip.name, test_model_zip)
+    utils.file_extraction_manager(MEDIA_ROOT, test_model_zip.name, load_model_directory)
+    path_to_extracted_files = os.path.join(load_model_directory, test_model_zip.name.split('.')[0])
+
+    images_array = get_images_to_predict(path_to_extracted_files)
+
+    global loaded_neural_network
+    predicts = loaded_neural_network.predict(np.vstack(images_array))
+
+    for i in range(0, len(predicts)):
+        print(np.argmax(predicts[i]))
+
+    result = {'response': True}
+
+    json_data = json.dumps(result)
+
     return JsonResponse(json_data, safe=False)

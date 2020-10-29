@@ -58,6 +58,7 @@ import os
 import random
 import pandas
 import seaborn
+import json
 from natsort import natsorted
 from matplotlib import pyplot as plt
 
@@ -318,13 +319,15 @@ def load_data(dst_path):
 
 def save_model_to_json(path_to_save, model):
     model_json = model.to_json()
+    temp_json = json.loads(model_json)
+    temp_json['classes'] = class_names
+    model_json = json.dumps(temp_json)
     path_to_json_file = os.path.join(path_to_save, 'json_nn.json')
     with open(path_to_json_file, 'w') as json_file:
         json_file.write(model_json)
 
 
 def compress_model_folder(path_to_working_dir):
-    # I need to pass the working directory path and build the paths to the saved model and the location to save the zip.
     path_to_save_zip = os.path.join(path_to_working_dir, 'nn_model.zip')
     path_to_folder = os.path.join(path_to_working_dir, 'saved_model')
     length = len(path_to_folder)

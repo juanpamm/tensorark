@@ -68,19 +68,6 @@
             </div>
         </div>
     </div>
-    <!--
-    <div class="col-lg-8 col-md-8 offset-md-2 offset-lg-3" style="margin-top: 60px">
-        <div id="confusion_matrix">
-        </div>
-    </div>
-    <div class="col-lg-8 col-md-8 offset-md-2 offset-lg-3" style="margin-top: 80px">
-        <div id="train_val_loss_plt">
-        </div>
-    </div>
-    <div class="col-lg-8 col-md-8 offset-md-2 offset-lg-3" style="margin-top: 80px">
-        <div id="train_val_accuracy_plt">
-        </div>
-    </div> -->
     <div class="col-lg-6 offset-lg-3" id="test_model_div" hidden>
         <div class="card">
             <div class="card-header">
@@ -89,7 +76,7 @@
                 </strong>
             </div>
             <div class="card-body">
-                <div class="form-group">
+                <div class="form-group" id="test_mdl_div">
                     <div class="col col-md-3">
                         <label for="testinp" class=" form-control-label">File input</label>
                     </div>
@@ -103,6 +90,34 @@
                     <div class="col-md-2" id="upload_test_mdl_gif">
                     </div>
                 </div>
+                <div class="col-md-4 offset-md-3" id="test_other_div" hidden>
+                    <button type="button" id="test_other_button" class="btn btn-success">
+                        Test model again
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8 offset-lg-2" id="test_results_div" hidden>
+        <div class="card">
+            <div class="card-header">
+                <strong class="card-title">Test results</strong>
+            </div>
+            <div class="card-body">
+                <table id="results_table" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Image name</th>
+                                <th>Prediction</th>
+                            </tr>
+                        </thead>
+                        <tfoot>
+                            <tr>
+                                <th>Image name</th>
+                                <th>Prediction</th>
+                            </tr>
+                        </tfoot>
+                </table>
             </div>
         </div>
     </div>
@@ -126,6 +141,7 @@
 
     <script>
     let table = $('#nn_table').DataTable();
+    let table_results = $('#results_table').DataTable();
     let working_dir = "";
 
     function upload_image_train(button_div, gif_div) {
@@ -135,6 +151,17 @@
                     '<img id="loading_image" class="icon-loading" ' +
                     'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1"/></div>');
     }
+
+    $('#test_other_button').on('click', function () {
+        const test_mdl_upload_button = $("#upload_test_mdl_btn");
+        table_results.rows().remove().draw();
+        $('#test_mdl_input').val('');
+        $('#test_other_div').prop('hidden', true);
+        $('#test_mdl_div').prop('hidden', false);
+        $('#upload_test_mdl_gif').html('');
+        test_mdl_upload_button.show();
+        test_mdl_upload_button.prop('disabled', false);
+    });
 
     $('#upload_file_btn').on('click', function () {
             const file_input = $('#file_input');
@@ -227,6 +254,7 @@
         const test_mdl_upload_button = $("#upload_test_mdl_btn");
         const test_mdl_gif_div = $("#upload_test_mdl_gif");
         const test_mdl_file_input = $("#test_mdl_input");
+        const results_div = $("#test_results_div");
 
         if (test_mdl_file_input[0].files.length > 0) {
             let test_form_data = new FormData();
@@ -267,12 +295,30 @@
                 processData: false,
                 success: function (data) {
                     let json = JSON.parse(data);
-                    alert(json.response);
+                    let images = json.images_names;
+                    let predicitons = json.predictions;
+                    let dir_images = json.dir_image;
+                    let url;
                     test_mdl_gif_div.html('');
                     test_mdl_gif_div.html('<div class="offset-md-4"><i style="color:green;" ' +
                         'class="ti-check"></i></div>');
+                    results_div.prop('hidden', false);
+
+                    for(let i = 0; i < images.length; i++){
+                        url = "{% url 'download_test_images' 'folder_name' 'image_dir' 'image_name' %}".
+                            replace(/folder_name/, working_dir);
+                        url = url.replace(/image_dir/, dir_images);
+                        url = url.replace(/image_name/, images[i]);
+                        table_results.row.add(
+                            ['<a href="' + url + '"' + 'id="download_model">' + images[i] + '</a>', predicitons[i]]
+                        ).draw();
+                    }
+
+                    $("#test_mdl_div").prop('hidden', true);
+                    $("#test_other_div").prop('hidden', false);
                 },
                 error: function () {
+                    alert("Something went wrong");
                 }
             });
         }else {

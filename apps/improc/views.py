@@ -15,6 +15,7 @@ matplotlib.use('Agg')
 
 graph = tf.Graph()
 loaded_neural_network = keras.Sequential()
+loaded_classes = []
 
 
 def build_improc_nn_template(request, folder):
@@ -234,6 +235,8 @@ def execute_nn_training(request):
 # -------------------------------------- MODEL LOADING ------------------------------------
 
 def load_model(request):
+    global loaded_neural_network
+    global loaded_classes
     keras.backend.clear_session()
     action = request.POST.get('action')
     model_zip = request.FILES['file']
@@ -262,7 +265,7 @@ def load_model(request):
     f = open(path_to_json_file, "r")
     f_content = json.loads(f.read())
     f.close()
-    classes = f_content['classes']
+    loaded_classes = f_content['classes']
     f_layers = f_content['config']['layers']
     len_f_layers = len(f_layers)
 
@@ -286,8 +289,7 @@ def load_model(request):
             result['hidden_layers'].append([f_layers[i]['config']['units'],
                                             activation_funcs.get(f_layers[i]['config']['activation'])])
 
-    result['classes'] = classes
-    global loaded_neural_network
+    result['classes'] = loaded_classes
     loaded_neural_network = keras.models.load_model(path_to_model_file)
 
     json_data = json.dumps(result)
@@ -297,7 +299,6 @@ def load_model(request):
 def get_images_to_predict(path_to_images):
     # load the image
     list_of_images = os.listdir(path_to_images)
-    print(list_of_images)
     list_of_converted_images = []
     for img in list_of_images:
         image = Image.open(os.path.join(path_to_images, img))
@@ -307,28 +308,44 @@ def get_images_to_predict(path_to_images):
         new_arr_image = new_arr_image / 255.0
         list_of_converted_images.append(new_arr_image)
 
-    return list_of_converted_images
+    return list_of_converted_images, list_of_images
 
 
 def predict_with_loaded_model(request):
     dir_name = request.POST.get('dir_name')
     test_model_zip = request.FILES['file']
     load_model_directory = os.path.join(MEDIA_ROOT, dir_name)
+    predictions = []
 
     default_storage.save(test_model_zip.name, test_model_zip)
     utils.file_extraction_manager(MEDIA_ROOT, test_model_zip.name, load_model_directory)
     path_to_extracted_files = os.path.join(load_model_directory, test_model_zip.name.split('.')[0])
 
-    images_array = get_images_to_predict(path_to_extracted_files)
+    images_array, list_of_images = get_images_to_predict(path_to_extracted_files)
 
     global loaded_neural_network
     predicts = loaded_neural_network.predict(np.vstack(images_array))
 
     for i in range(0, len(predicts)):
-        print(np.argmax(predicts[i]))
+        prediction = int(np.argmax(predicts[i]))
+        predictions.append(loaded_classes[prediction])
 
-    result = {'response': True}
+    image_dir_name = test_model_zip.name.split('.')[0]
+    result = {'predictions': predictions, 'images_names': list_of_images, 'dir_image': image_dir_name}
 
     json_data = json.dumps(result)
 
     return JsonResponse(json_data, safe=False)
+
+
+def download_test_images(request, dir_name, image_dir, image_name):
+    dst_path = os.path.join(MEDIA_ROOT, dir_name)
+    dir_file_path = os.path.join(dst_path, image_dir)
+    full_file_path = os.path.join(dir_file_path, image_name)
+    print('Full file path: ', full_file_path)
+    if os.path.exists(full_file_path):
+        with open(full_file_path, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="image/*")
+            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(full_file_path)
+            return response
+    raise Http404

@@ -1,8 +1,7 @@
 from django.core.files.storage import default_storage
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from django.views.decorators.csrf import ensure_csrf_cookie
-
 from tensorark.settings import MEDIA_ROOT
 from utils import utils
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -14,13 +13,9 @@ import os.path
 import numpy as np
 import random
 import tensorflow as tf
-import shutil
-import pandas
-import seaborn
-from matplotlib import pyplot as plt
 
 graph = tf.Graph()
-
+loaded_neural_network = keras.Sequential()
 
 def upload_text_nn_template(request):
     return render(request, 'textproc/upload_text_set_nn.html')
@@ -29,6 +24,10 @@ def upload_text_nn_template(request):
 def build_textproc_nn_template(request, folder):
     contexto = {'folder': folder}
     return render(request, 'textproc/build_textproc_nn.html', contexto)
+
+
+def load_textproc_model_template(request):
+    return render(request, 'textproc/load_textproc_model.html')
 
 
 @ensure_csrf_cookie
@@ -231,12 +230,6 @@ def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_a
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
         test_loss, test_acc = model.evaluate(val_texts, test_labels)
 
-        '''
-        predictions = model.predict(val_texts)
-        print(val_texts[0])
-        print(predictions[0])
-        print(np.argmax(predictions[0]))
-        '''
         working_dir_folder_name = os.path.split(working_dir_name)[1]
 
         # Use the test set for prediction
@@ -262,11 +255,11 @@ def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_a
         val_loss = history_dict['val_loss']
         epochs = range(1, len(acc) + 1)
 
-        loss_plot_img_name = "train_val_loss.png"
+        loss_plot_img_name = "textproc_train_val_loss.png"
         loss_plot_img_partial_path = working_dir_folder_name + '/' + loss_plot_img_name
         loss_plot_img_path = os.path.join(working_dir_name, loss_plot_img_name)
 
-        accuracy_plot_img_name = "acc_val_accu.png"
+        accuracy_plot_img_name = "textproc_acc_val_accu.png"
         accuracy_plot_img_partial_path = working_dir_folder_name + '/' + accuracy_plot_img_name
         accuracy_plot_img_path = os.path.join(working_dir_name, accuracy_plot_img_name)
 
@@ -277,3 +270,72 @@ def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_a
 
     return {"accuracy": test_acc, "conf_matrix_name": img_name_to_send,
             "loss_plot_img_name": loss_plot_img_partial_path, "accuracy_plot_img_name": accuracy_plot_img_partial_path}
+
+
+def textproc_download_saved_model(request, dir_name):
+    dst_path = os.path.join(MEDIA_ROOT, dir_name)
+    full_file_path = os.path.join(dst_path, 'nn_model.zip')
+    if os.path.exists(full_file_path):
+        with open(full_file_path, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/zip")
+            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(full_file_path)
+            return response
+    raise Http404
+
+
+def textproc_load_model(request):
+    keras.backend.clear_session()
+    action = request.POST.get('action')
+    model_zip = request.FILES['file']
+    app = request.POST.get('app')
+    activation_funcs = {
+        'relu': 'Rectified Linear Unit',
+        'sigmoid': 'Sigmoid',
+        'tanh': 'Hyperbolic Tangent',
+        'elu': 'Exponential Linear Unit',
+        'softmax': 'Softmax'
+    }
+
+    default_storage.save(model_zip.name, model_zip)
+    load_dir_name = utils.get_name_for_working_dir(MEDIA_ROOT, action, app)
+    dst_path = os.path.join(MEDIA_ROOT, load_dir_name)
+    if not os.path.exists(dst_path):
+        os.mkdir(dst_path)
+
+    utils.file_extraction_manager(MEDIA_ROOT, model_zip.name, dst_path)
+    path_to_conf_matrix = os.path.split(dst_path)[1] + '/textproc_conf_matrix.png'
+    path_to_loss_plot = os.path.split(dst_path)[1] + '/textproc_loss_plot.png'
+    path_to_acc_plot = os.path.split(dst_path)[1] + '/textproc_accuracy_plot.png'
+    path_to_json_file = os.path.join(dst_path, 'json_nn.json')
+    path_to_model_file = os.path.join(dst_path, 'neural_network.h5')
+
+    f = open(path_to_json_file, "r")
+    f_content = json.loads(f.read())
+    f.close()
+    f_layers = f_content['config']['layers']
+    len_f_layers = len(f_layers)
+
+    result = {
+        'num_layers': len_f_layers,
+        'load_dir_name': load_dir_name,
+        'hidden_layers': [],
+        'conf_matrix': path_to_conf_matrix,
+        'loss_plot': path_to_loss_plot,
+        'accuracy_plot': path_to_acc_plot
+    }
+
+    for i in range(len_f_layers):
+        if i == 0:
+            result['input_layer'] = f_layers[i]['config']['batch_input_shape'][1]
+        elif i == (len_f_layers - 1):
+            result['output_layer'] = [f_layers[i]['config']['units'],
+                                      activation_funcs.get(f_layers[i]['config']['activation'])]
+        elif i != 1:
+            result['hidden_layers'].append([f_layers[i]['config']['units'],
+                                            activation_funcs.get(f_layers[i]['config']['activation'])])
+
+    global loaded_neural_network
+    loaded_neural_network = keras.models.load_model(path_to_model_file)
+
+    json_data = json.dumps(result)
+    return JsonResponse(json_data, safe=False)

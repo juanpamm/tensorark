@@ -315,13 +315,12 @@
                                         '</div>');
                         $('#train_button').prop('hidden', true);
                         $('#train_other_button').prop('hidden', false);
-                        /*
                         let url = "{% url 'download_saved_model' 'folder_name' %}".
                             replace(/folder_name/, fold);
                         $('#div_download').prop('hidden', false);
                         $('#download_model_div').html('<a href="' + url + '"' + 'id="download_model" ' +
                             'class="btn btn-success" style="color: white;"> Download <i class="ti-download"' +
-                            'style="margin-left: 8px; color: white;"></i></a>');*/
+                            'style="margin-left: 8px; color: white;"></i></a>');
                         $('#confusion_matrix').html('<img alt="Confusion matrix" src="/media/' +
                             json.conf_matrix + '" height="600" width="600">');
                         $('#train_val_loss_plt').html('<img alt="Loss plot" src="/media/' +

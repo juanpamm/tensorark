@@ -342,7 +342,6 @@ def download_test_images(request, dir_name, image_dir, image_name):
     dst_path = os.path.join(MEDIA_ROOT, dir_name)
     dir_file_path = os.path.join(dst_path, image_dir)
     full_file_path = os.path.join(dir_file_path, image_name)
-    print('Full file path: ', full_file_path)
     if os.path.exists(full_file_path):
         with open(full_file_path, 'rb') as fh:
             response = HttpResponse(fh.read(), content_type="image/*")

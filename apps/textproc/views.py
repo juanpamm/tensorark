@@ -7,6 +7,7 @@ from utils import utils
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import f_classif
+import joblib
 from tensorflow import keras
 import json
 import os.path
@@ -16,6 +17,9 @@ import tensorflow as tf
 
 graph = tf.Graph()
 loaded_neural_network = keras.Sequential()
+loaded_selector = SelectKBest()
+loaded_vectorizer = TfidfVectorizer()
+
 
 def upload_text_nn_template(request):
     return render(request, 'textproc/upload_text_set_nn.html')
@@ -168,7 +172,7 @@ def ngram_vectorize(train_texts, train_labels, val_texts):
     x_train = selector.transform(x_train).astype('float32')
     x_val = selector.transform(x_val).astype('float32')
 
-    return x_train, x_val
+    return x_train, x_val, selector, vectorizer
 
 
 def textproc_add_layers_to_network(model, nodes, activation_func):
@@ -216,7 +220,7 @@ def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_a
             
         (train_texts, train_labels), (test_texts, test_labels) = preprocess_train_test_data(train_test_set_path)
 
-        x_train, val_texts = ngram_vectorize(train_texts, train_labels, test_texts)
+        x_train, val_texts, selector, vectorizer = ngram_vectorize(train_texts, train_labels, test_texts)
         # Construction, training and saving of the neural network
         model = textproc_build_neural_network(layers, nodes, len(classes), act_functions, output_act_func,
                                               x_train.shape[1:])
@@ -226,6 +230,11 @@ def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_a
                     train_labels,
                     epochs=epochs,
                     validation_data=(val_texts, test_labels))
+
+        selector_dump_path = os.path.join(checkpoint_path, 'selector.pkl')
+        vectorizer_dump_path = os.path.join(checkpoint_path, 'vectorizer.pkl')
+        joblib.dump(vectorizer, vectorizer_dump_path)
+        joblib.dump(selector, selector_dump_path)
         utils.save_model_to_json(checkpoint_path, model)
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
         test_loss, test_acc = model.evaluate(val_texts, test_labels)
@@ -284,6 +293,7 @@ def textproc_download_saved_model(request, dir_name):
 
 
 def textproc_load_model(request):
+    global loaded_neural_network, loaded_selector, loaded_vectorizer
     keras.backend.clear_session()
     action = request.POST.get('action')
     model_zip = request.FILES['file']
@@ -303,11 +313,10 @@ def textproc_load_model(request):
         os.mkdir(dst_path)
 
     utils.file_extraction_manager(MEDIA_ROOT, model_zip.name, dst_path)
-    path_to_conf_matrix = os.path.split(dst_path)[1] + '/textproc_conf_matrix.png'
-    path_to_loss_plot = os.path.split(dst_path)[1] + '/textproc_loss_plot.png'
-    path_to_acc_plot = os.path.split(dst_path)[1] + '/textproc_accuracy_plot.png'
     path_to_json_file = os.path.join(dst_path, 'json_nn.json')
     path_to_model_file = os.path.join(dst_path, 'neural_network.h5')
+    path_to_selector_file = os.path.join(dst_path, 'selector.pkl')
+    path_to_vectorizer_file = os.path.join(dst_path, 'vectorizer.pkl')
 
     f = open(path_to_json_file, "r")
     f_content = json.loads(f.read())
@@ -318,10 +327,7 @@ def textproc_load_model(request):
     result = {
         'num_layers': len_f_layers,
         'load_dir_name': load_dir_name,
-        'hidden_layers': [],
-        'conf_matrix': path_to_conf_matrix,
-        'loss_plot': path_to_loss_plot,
-        'accuracy_plot': path_to_acc_plot
+        'hidden_layers': []
     }
 
     for i in range(len_f_layers):
@@ -334,8 +340,68 @@ def textproc_load_model(request):
             result['hidden_layers'].append([f_layers[i]['config']['units'],
                                             activation_funcs.get(f_layers[i]['config']['activation'])])
 
-    global loaded_neural_network
     loaded_neural_network = keras.models.load_model(path_to_model_file)
-
+    loaded_selector = joblib.load(path_to_selector_file)
+    loaded_vectorizer = joblib.load(path_to_vectorizer_file)
     json_data = json.dumps(result)
     return JsonResponse(json_data, safe=False)
+
+
+def vectorize_texts_for_test(test_texts):
+    # Learn vocabulary from training texts and vectorize training texts.
+    vect_test_texts = loaded_vectorizer.transform(test_texts).toarray()
+
+    vect_test_texts = loaded_selector.transform(vect_test_texts).astype('float32')
+
+    return vect_test_texts
+
+
+def predict_with_loaded_model(request):
+    global loaded_neural_network
+    dir_name = request.POST.get('dir_name')
+    test_model_zip = request.FILES['file']
+    load_model_directory = os.path.join(MEDIA_ROOT, dir_name)
+    texts_from_files = []
+    predictions = []
+    classes = ['Negative', 'Positive']
+
+    default_storage.save(test_model_zip.name, test_model_zip)
+    utils.file_extraction_manager(MEDIA_ROOT, test_model_zip.name, load_model_directory)
+    path_to_extracted_files = os.path.join(load_model_directory, test_model_zip.name.split('.')[0])
+
+    list_of_files = os.listdir(path_to_extracted_files)
+
+    for file in list_of_files:
+        file_full_path = os.path.join(path_to_extracted_files, file)
+        f = open(file_full_path, "r")
+        file_contents = f.read()
+        texts_from_files.append(file_contents)
+
+    test_texts = vectorize_texts_for_test(texts_from_files)
+
+    predicts = (loaded_neural_network.predict(test_texts) > 0.5).astype("int32")
+
+    for pred in predicts:
+        if pred[0] == 1:
+            predictions.append('Positive')
+        else:
+            predictions.append('Negative')
+
+    file_dir_name = test_model_zip.name.split('.')[0]
+    result = {'predictions': predictions, 'files_names': list_of_files, 'dir_files': file_dir_name}
+
+    json_data = json.dumps(result)
+
+    return JsonResponse(json_data, safe=False)
+
+
+def download_test_texts(request, dir_name, texts_dir, text_name):
+    dst_path = os.path.join(MEDIA_ROOT, dir_name)
+    dir_file_path = os.path.join(dst_path, texts_dir)
+    full_file_path = os.path.join(dir_file_path, text_name)
+    if os.path.exists(full_file_path):
+        with open(full_file_path, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="text/plain")
+            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(full_file_path)
+            return response
+    raise Http404

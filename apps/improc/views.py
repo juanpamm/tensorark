@@ -44,7 +44,8 @@ def improc_add_layers_to_network(model, nodes, activation_func):
         model.add(keras.layers.Dense(nodes, activation=tf.nn.softmax))
 
 
-def improc_build_neural_network(nlayers, nodes, act_functions, output_act_func):
+def improc_build_neural_network(nlayers, nodes, act_functions):
+    model_loss = ''
     model = keras.Sequential([
         keras.layers.Flatten(input_shape=(utils.width, utils.height))
     ])
@@ -54,15 +55,20 @@ def improc_build_neural_network(nlayers, nodes, act_functions, output_act_func):
         improc_add_layers_to_network(model, nodes[i], act_functions[i])
 
     # Construction of the output layer
-    improc_add_layers_to_network(model, len(utils.class_names), output_act_func)
+    if len(utils.class_names) == 2:
+        improc_add_layers_to_network(model, 1, 'sigmoid')
+        model_loss = 'binary_crossentropy'
+    elif len(utils.class_names) > 2:
+        improc_add_layers_to_network(model, len(utils.class_names), 'softmax')
+        model_loss = 'sparse_categorical_crossentropy'
 
     model.compile(optimizer='adam',
-                  loss='sparse_categorical_crossentropy',
+                  loss=model_loss,
                   metrics=['accuracy'])
     return model
 
 
-def improc_train_neural_network_v2(layers, nodes, act_functions, epochs, output_act_func, dst_path):
+def improc_train_neural_network_v2(layers, nodes, act_functions, epochs, dst_path):
     with graph.as_default():
         sess = tf.compat.v1.Session()
         path_for_converted_set = os.path.join(dst_path, 'converted_set')
@@ -80,7 +86,7 @@ def improc_train_neural_network_v2(layers, nodes, act_functions, epochs, output_
         test_images = test_images / 255.0
 
         # Construction, training and saving of the neural network
-        model = improc_build_neural_network(layers, nodes, act_functions, output_act_func)
+        model = improc_build_neural_network(layers, nodes, act_functions)
         history = model.fit(train_images, train_labels, epochs=epochs, validation_data=(test_images, test_labels))
         utils.save_model_to_json(checkpoint_path, model)
         model.save(os.path.join(checkpoint_path, 'neural_network.h5'))
@@ -208,7 +214,6 @@ def execute_nn_training(request):
     layers = int(request.POST.get('layers'))
     nodes = json.loads(request.POST.get('nodes'))
     activation_functions = json.loads(request.POST.get('act_func'))
-    output_act_func = request.POST.get('output_act_func')
     epochs = int(request.POST.get('epochs'))
     fold_name = request.POST.get('folder')
     dst_path = os.path.join(MEDIA_ROOT, fold_name)
@@ -216,7 +221,7 @@ def execute_nn_training(request):
         nodes[i] = int(nodes[i])
 
     # Execute function to train the neural network
-    results = improc_train_neural_network_v2(layers, nodes, activation_functions, epochs, output_act_func, dst_path)
+    results = improc_train_neural_network_v2(layers, nodes, activation_functions, epochs, dst_path)
 
     # Setting the information to be sent to the client
     acc_percentage = results.get("accuracy") * 100

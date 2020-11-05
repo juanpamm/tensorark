@@ -98,7 +98,6 @@ def execute_model_training(request):
     layers = int(request.POST.get('layers'))
     nodes = json.loads(request.POST.get('nodes'))
     activation_functions = json.loads(request.POST.get('act_func'))
-    output_act_func = request.POST.get('output_act_func')
     epochs = int(request.POST.get('epochs'))
     fold_name = request.POST.get('folder')
     dst_path = os.path.join(MEDIA_ROOT, fold_name)
@@ -106,7 +105,7 @@ def execute_model_training(request):
         nodes[i] = int(nodes[i])
 
     # Execute function to train the neural network
-    results = textproc_train_neural_network(layers, nodes, activation_functions, epochs, output_act_func, dst_path)
+    results = textproc_train_neural_network(layers, nodes, activation_functions, epochs, dst_path)
 
     # Setting the information to be sent to the client
     acc_percentage = results.get("accuracy") * 100
@@ -188,7 +187,7 @@ def textproc_add_layers_to_network(model, nodes, activation_func):
         model.add(keras.layers.Dense(nodes, activation=tf.nn.softmax))
 
 
-def textproc_build_neural_network(nlayers, nodes, num_classes, act_functions, output_act_func, input_shape):
+def textproc_build_neural_network(nlayers, nodes, act_functions, input_shape):
     model = keras.Sequential([
         keras.layers.Dropout(rate=0.0, input_shape=input_shape)
     ])
@@ -198,7 +197,7 @@ def textproc_build_neural_network(nlayers, nodes, num_classes, act_functions, ou
         textproc_add_layers_to_network(model, nodes[i], act_functions[i])
 
     # Construction of the output layer
-    textproc_add_layers_to_network(model, 1, output_act_func)
+    textproc_add_layers_to_network(model, 1, 'sigmoid')
 
     model.compile(optimizer='adam',
                   loss='binary_crossentropy',
@@ -206,7 +205,7 @@ def textproc_build_neural_network(nlayers, nodes, num_classes, act_functions, ou
     return model
 
 
-def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_act_func, working_dir_name):
+def textproc_train_neural_network(layers, nodes, act_functions, epochs, working_dir_name):
     with graph.as_default():
         sess = tf.compat.v1.Session()
         work_dir_full_path = os.path.join(MEDIA_ROOT, working_dir_name)
@@ -222,8 +221,7 @@ def textproc_train_neural_network(layers, nodes, act_functions, epochs, output_a
 
         x_train, val_texts, selector, vectorizer = ngram_vectorize(train_texts, train_labels, test_texts)
         # Construction, training and saving of the neural network
-        model = textproc_build_neural_network(layers, nodes, len(classes), act_functions, output_act_func,
-                                              x_train.shape[1:])
+        model = textproc_build_neural_network(layers, nodes, act_functions, x_train.shape[1:])
 
         history = model.fit(
                     x_train,

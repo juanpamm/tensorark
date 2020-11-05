@@ -80,31 +80,6 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 offset-lg-3">
-                <div class="card">
-                    <div class="card-header">
-                        <strong class="card-title">
-                            Select activation function for the output layer
-                        </strong>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label for="afunc_outlay" class="control-label mb-1">
-                                Output layer
-                            </label>
-                            <select id="afunc_outlay" name="act_func_out_lay" class="output_layer"
-                            data-placeholder="Choose an activation function..." disabled>
-                                <option value=""></option>
-                                <option value="relu">Rectified Linear Unit</option>
-                                <option value="sigmoid">Sigmoid</option>
-                                <option value="tanh">Hyperbolic Tangent</option>
-                                <option value="elu">Exponential Linear Unit</option>
-                                <option value="softmax">Softmax</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
             <div class="col-lg-6 offset-lg-3" id="div_download" hidden>
                 <div class="card">
                     <div class="card-header">
@@ -208,7 +183,6 @@
         function reset_all(){
             const num_epoch = $('#num_epoch');
             const num_hid_layers = $('#num_hid_layers');
-            const afunc_outlay = $('#afunc_outlay');
 
             table.rows().remove().draw();
             $('#result_div').html('');
@@ -219,8 +193,6 @@
             num_hid_layers.prop('disabled', false);
             num_epoch.val('');
             num_epoch.prop('disabled', false);
-            afunc_outlay.val('').trigger('chosen:updated');
-            afunc_outlay.prop('disabled', true).trigger('chosen:updated');
             $('#div_download').prop('hidden', true);
         }
 
@@ -236,7 +208,6 @@
             let form_data = new FormData();
             let num_hidden_layers = num_hid_layers.val();
             let number_epochs = num_epoch.val();
-            let output_act_func = $('#afunc_outlay option:selected').val();
             let table_nodes = table.$('input').serializeArray();
             let table_act_funcs = table.$('select').serializeArray();
             let nodes = [];
@@ -259,7 +230,6 @@
                 form_data.append("layers", num_hidden_layers);
                 form_data.append("epochs", number_epochs);
                 form_data.append("act_func", JSON.stringify(layers_activation_functions));
-                form_data.append("output_act_func", output_act_func);
                 form_data.append("nodes", JSON.stringify(nodes));
                 form_data.append("folder", fold);
 
@@ -352,7 +322,6 @@
             }
             else{
                 $('#train_button').prop('disabled', false);
-                $('#afunc_outlay').prop('disabled', false).trigger('chosen:updated');
                 table.rows().remove().draw();
 
                 for (let i = 0; i < layers; i++){

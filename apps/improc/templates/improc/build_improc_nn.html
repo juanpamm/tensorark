@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load bootstrap3 %}
+{% load staticfiles %}
+{% load static %}
+
+{% block title_block %} TensorArk {% endblock  %}
+
+{% block page_title_block %} TensorArk {% endblock %}
+
+{% block css_block %}
+
+    <link rel="stylesheet" href="{% static 'assets/css/lib/chosen/chosen.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/lib/datatable/dataTables.bootstrap.min.css' %}">
+
+    <style>
+        #result_area {
+            resize: none;
+        }
+    </style>
+
+{% endblock %}
+
+{% block body_block %}
+    <form method="POST" id="dl_form" enctype="multipart/form-data"> {% csrf_token %}
+        <div class="row">
+            <div class="col-lg-6 offset-lg-3">
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">
+                            Neural network design
+                        </strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="num_hid_layers" class="control-label mb-1">
+                                Number of hidden layers for the network
+                            </label>
+                            <input id="num_hid_layers" name="num_layers" type="number" min="1" oninput="validity.valid||(value='');" class="form-control"
+                            aria-required="true" aria-invalid="false">
+                        </div>
+                        <div class="form-group">
+                            <label for="num_epoch" class="control-label mb-1">
+                                Number of epochs
+                            </label>
+                            <input id="num_epoch" type="number" min="1" oninput="validity.valid||(value='');" class="form-control"
+                            aria-required="true" aria-invalid="false">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 offset-md-4">
+                                <button type="button" id="add_nodes" class="btn btn-info">
+                                    Configure network
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8 offset-lg-2">
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">Set the nodes and activation function for each hidden layer</strong>
+                    </div>
+                    <div class="card-body">
+                        <table id="node-table" class="table table-striped table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Layer</th>
+                                        <th>Number of nodes</th>
+                                        <th>Activation function</th>
+                                    </tr>
+                                </thead>
+                                <tfoot>
+                                    <tr>
+                                        <th>Layer</th>
+                                        <th>Number of nodes</th>
+                                        <th>Activation function</th>
+                                    </tr>
+                                </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 offset-lg-3" id="div_download" hidden>
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">
+                            Download the trained network
+                        </strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 offset-md-4" id="download_model_div">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 offset-lg-3">
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">
+                            Train neural network
+                        </strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div id="div_train_button" class="col-md-4 offset-md-4">
+                                <button type="button" id="train_button" class="btn btn-info" disabled>
+                                    Train network
+                                </button>
+                            </div>
+                            <div class="col-md-4 offset-md-3">
+                                <button type="button" id="train_other_button" class="btn btn-success" hidden>
+                                    Train another network
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div id="result_div" class="col-md-10 col-lg-11" tabindex="1">
+            </div>
+        </div>
+        <div class="row" style="margin-top: 60px">
+            <div id="confusion_matrix" class="col-lg-8 col-md-8 offset-md-2 offset-lg-3">
+
+            </div>
+        </div>
+        <div class="row" style="margin-top: 80px">
+            <div id="train_val_loss_plt" class="col-lg-8 col-md-8 offset-md-2 offset-lg-3">
+
+            </div>
+        </div>
+        <div class="row" style="margin-top: 80px">
+            <div id="train_val_accuracy_plt" class="col-lg-8 col-md-8 offset-md-2 offset-lg-3">
+
+            </div>
+        </div>
+    </form>
+{% endblock %}
+
+{% block js_block %}
+
+    <!-- Datatable scripts -->
+
+    <script src="{% static 'assets/js/lib/data-table/datatables.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/vfs_fonts.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.html5.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.print.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.colVis.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/datatables-init.js' %}"></script>
+
+    <script src="{% static 'assets/js/lib/chosen/chosen.jquery.min.js' %}"></script>
+
+
+
+    <script>
+        jQuery(document).ready(function() {
+            jQuery(".output_layer").chosen({
+                disable_search_threshold: 0,
+                no_results_text: "Oops, nothing found!",
+                width: "100%"
+            });
+        });
+    </script>
+
+    <script>
+        let fold = '{{ folder }}';
+        let table = $('#node-table').DataTable();
+
+        function loading_gif_train() {
+            $('#result_div').html('<div class="offset-md-4 offset-lg-5">' +
+                    '<img id="loading_image" class="icon-loading" ' +
+                    'src="{% static 'gif/lg.circle-slack-loading-icon.gif' %}" tabindex="1"/></div>');
+            $("html, body").animate({ scrollTop: $(document).height() }, 1000);
+        }
+
+        function reset_all(){
+            const num_epoch = $('#num_epoch');
+            const num_hid_layers = $('#num_hid_layers');
+
+            table.rows().remove().draw();
+            $('#result_div').html('');
+            $('#confusion_matrix').html('');
+            $('#train_val_loss_plt').html('');
+            $('#train_val_accuracy_plt').html('');
+            $('#label_result_area').prop('hidden', true);
+            $('#num_nodes').prop('disabled', false);
+            num_hid_layers.val('');
+            num_hid_layers.prop('disabled', false);
+            num_epoch.val('');
+            num_epoch.prop('disabled', false);
+            $('#div_download').prop('hidden', true);
+        }
+
+        $('#train_other_button').on('click', function () {
+            reset_all();
+            $('#train_other_button').prop('hidden', true);
+            $('#train_button').prop('hidden', false);
+        });
+
+        $('#train_button').on('click', function () {
+            const num_hid_layers = $('#num_hid_layers');
+            const num_epoch = $('#num_epoch');
+            let form_data = new FormData();
+            let num_hidden_layers = num_hid_layers.val();
+            let number_epochs = num_epoch.val();
+            let table_nodes = table.$('input').serializeArray();
+            let table_act_funcs = table.$('select').serializeArray();
+            let nodes = [];
+            let layers_activation_functions = [];
+
+            for (let j = 0; j < num_hidden_layers; j++){
+                nodes.push(table_nodes[j].value);
+                layers_activation_functions.push(table_act_funcs[j].value);
+            }
+
+            if(num_hidden_layers === "" || number_epochs === "" || nodes.includes('') === true ||
+                layers_activation_functions.includes('') === true){
+                alert("Please, make sure you have filled all the fields and uploaded your image set.");
+            }else{
+                $('#train_button').prop('disabled', true);
+                num_hid_layers.prop('disabled', true);
+                $('#num_nodes').prop('disabled', true);
+                num_epoch.prop('disabled', true);
+
+                form_data.append("layers", num_hidden_layers);
+                form_data.append("epochs", number_epochs);
+                form_data.append("act_func", JSON.stringify(layers_activation_functions));
+                form_data.append("nodes", JSON.stringify(nodes));
+                form_data.append("folder", fold);
+
+                loading_gif_train();
+
+                $.ajaxSetup({
+                     beforeSend: function(xhr, settings) {
+                         function getCookie(name) {
+                             let cookieValue = null;
+                             if (document.cookie && document.cookie != '') {
+                                 let cookies = document.cookie.split(';');
+                                 for (let i = 0; i < cookies.length; i++) {
+                                     let cookie = jQuery.trim(cookies[i]);
+                                     // Does this cookie string begin with the name we want?
+                                     if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                         break;
+                                     }
+                                 }
+                             }
+                             return cookieValue;
+                         }
+                         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                             // Only send the token to relative URLs i.e. locally.
+                             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+                         }
+                     }
+                });
+
+                $.ajax({
+                    type: "POST",
+                    url:"{% url 'execute_nn_training' %}",
+                    data: form_data,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success: function (data) {
+                        let json = JSON.parse(data);
+                        const result_div = $('#result_div');
+                        let accuracy = json.net_accuracy;
+                        let color_acc_card;
+
+                        if (accuracy >= 70) {
+                            color_acc_card = 5;
+                        }else if (accuracy >= 50 && accuracy < 70) {
+                            color_acc_card = 3;
+                        }else {
+                            color_acc_card = 4;
+                        }
+                        result_div.html('');
+                        result_div.html('<div class="card bg-flat-color-' + color_acc_card +
+                                            ' text-light col-lg-2 offset-md-4 offset-lg-5">\n' +
+                                            '<div class="card-body" style="margin-left: 15px;">\n' +
+                                                '<div class="h4 m-0">' + accuracy + '% </div>\n'+
+                                                '<div>Accuracy</div>'+
+                                            '</div>\n'+
+                                        '</div>');
+
+                        $('#train_button').prop('hidden', true);
+                        $('#train_other_button').prop('hidden', false);
+                        let url = "{% url 'download_saved_model' 'folder_name' %}".
+                            replace(/folder_name/, fold);
+                        $('#div_download').prop('hidden', false);
+                        $('#download_model_div').html('<a href="' + url + '"' + 'id="download_model" ' +
+                            'class="btn btn-success" style="color: white;"> Download <i class="ti-download"' +
+                            'style="margin-left: 8px; color: white;"></i></a>');
+                        $('#confusion_matrix').html('<img alt="Confusion matrix" src="/media/' + json.img_name + '" ' +
+                            'height="600" width="600">');
+                        $('#train_val_loss_plt').html('<img alt="Loss plot" src="/media/' +
+                            json.loss_plot + '" height="600" width="600">');
+                        $('#train_val_accuracy_plt').html('<img alt="Accuracy plot" src="/media/' +
+                            json.accuracy_plot + '" height="600" width="600">');
+                    },
+                    error: function () {
+                        alert("There was an error in the server");
+                    }
+                });
+            }
+        });
+
+        $('#add_nodes').on('click', function () {
+            let layers = $('#num_hid_layers').val();
+            let row_id = '';
+
+            if(layers === ''){
+                alert("Please specify a number of layers");
+            }
+            else if(layers === 0){
+                alert("Please enter at least one layer");
+            }
+            else{
+                $('#train_button').prop('disabled', false);
+                table.rows().remove().draw();
+
+                for (let i = 0; i < layers; i++){
+                    row_id = 'row-layer-' + (i + 1);
+                    table.row.add([(i + 1), "<input type='number' id='" + row_id + "'" + " name='" + row_id
+                                    + "'" + "min='1' oninput=validity.valid||(value=''); value=''>",
+                                    "<select id='act_func_op" + row_id + "' name='act_func_op" + row_id + "'" + "class='tableSelect'"+
+                                    "data-placeholder='Choose an activation function...'>" +
+                                        "<option value=''></option>"  +
+                                        "<option value='relu'>Rectified Linear Unit</option>" +
+                                        "<option value='sigmoid'>Sigmoid</option>" +
+                                        "<option value='tanh'>Hyperbolic Tangent</option>" +
+                                        "<option value='elu'>Exponential Linear Unit</option>" +
+                                        "<option value='softmax'>Softmax</option>" +
+                                    "</select>" ]).draw();
+                }
+
+                jQuery(".tableSelect").chosen({
+                    disable_search_threshold: 0,
+                    no_results_text: "Oops, nothing found!",
+                    width: "100%"
+                });
+            }
+        });
+
+    </script>
+{% endblock %}

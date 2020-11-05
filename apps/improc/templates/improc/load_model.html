@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% load bootstrap3 %}
+{% load staticfiles %}
+
+{% block title_block %} TensorArk {% endblock  %}
+
+{% block page_title_block %} TensorArk {% endblock %}
+
+{% block css_block %}
+
+    <link rel="stylesheet" href="{% static 'assets/css/lib/datatable/dataTables.bootstrap.min.css' %}">
+
+{% endblock %}
+
+{% block body_block %}
+    <div class="col-lg-6 offset-lg-3">
+        <div class="card">
+            <div class="card-header">
+                <strong class="card-title">
+                    Upload your model
+                </strong>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <div class="col col-md-3">
+                        <label for="file_input" class=" form-control-label">File input</label>
+                    </div>
+                    <div class="col-12 col-md-7">
+                        <input type="file" id="file_input" name="fileinp" class="form-control-file">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" id="upload_file_btn" class="btn btn-info">
+                            <i class="ti-upload"></i></button>
+                    </div>
+                    <div class="col-md-2" id="upload_gif">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card">
+            <div class="card-header">
+                <strong class="card-title">Structure of your neural network</strong>
+            </div>
+            <div class="card-body">
+                <div class="col-lg-12" id="num_layers"></div>
+                <div class="col-lg-12" id="input_layer"></div>
+                <div class="col-lg-12" id="classes"></div>
+                <div class="col-lg-12">
+                    <table id="nn_table" class="table table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Layer</th>
+                                    <th>Number of nodes</th>
+                                    <th>Activation function</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>Layer</th>
+                                    <th>Number of nodes</th>
+                                    <th>Activation function</th>
+                                </tr>
+                            </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 offset-lg-3" id="test_model_div" hidden>
+        <div class="card">
+            <div class="card-header">
+                <strong class="card-title">
+                    Test your model
+                </strong>
+            </div>
+            <div class="card-body">
+                <div class="form-group" id="test_mdl_div">
+                    <div class="col col-md-3">
+                        <label for="testinp" class=" form-control-label">File input</label>
+                    </div>
+                    <div class="col-12 col-md-7">
+                        <input type="file" id="test_mdl_input" name="testinp" class="form-control-file">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" id="upload_test_mdl_btn" class="btn btn-info">
+                            <i class="ti-upload"></i></button>
+                    </div>
+                    <div class="col-md-2" id="upload_test_mdl_gif">
+                    </div>
+                </div>
+                <div class="col-md-4 offset-md-3" id="test_other_div" hidden>
+                    <button type="button" id="test_other_button" class="btn btn-success">
+                        Test model again
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8 offset-lg-2" id="test_results_div" hidden>
+        <div class="card">
+            <div class="card-header">
+                <strong class="card-title">Test results</strong>
+            </div>
+            <div class="card-body">
+                <table id="results_table" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Image name</th>
+                                <th>Prediction</th>
+                            </tr>
+                        </thead>
+                        <tfoot>
+                            <tr>
+                                <th>Image name</th>
+                                <th>Prediction</th>
+                            </tr>
+                        </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js_block %}
+
+    <!-- Datatable scripts -->
+
+    <script src="{% static 'assets/js/lib/data-table/datatables.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/vfs_fonts.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.html5.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.print.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.colVis.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/datatables-init.js' %}"></script>
+
+    <script src="{% static 'assets/js/lib/chosen/chosen.jquery.min.js' %}"></script>
+
+    <script>
+    let table = $('#nn_table').DataTable();
+    let table_results = $('#results_table').DataTable();
+    let working_dir = "";
+
+    function upload_image_train(button_div, gif_div) {
+            button_div.prop('disabled', true);
+            button_div.hide();
+            gif_div.html('<div class="offset-md-4">' +
+                    '<img id="loading_image" class="icon-loading" ' +
+                    'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1"/></div>');
+    }
+
+    $('#test_other_button').on('click', function () {
+        const test_mdl_upload_button = $("#upload_test_mdl_btn");
+        table_results.rows().remove().draw();
+        $('#test_mdl_input').val('');
+        $('#test_other_div').prop('hidden', true);
+        $('#test_mdl_div').prop('hidden', false);
+        $('#upload_test_mdl_gif').html('');
+        test_mdl_upload_button.show();
+        test_mdl_upload_button.prop('disabled', false);
+    });
+
+    $('#upload_file_btn').on('click', function () {
+            const file_input = $('#file_input');
+            const upload_file_button = $("#upload_file_btn");
+            const upload_gif_div = $("#upload_gif");
+            if (file_input[0].files.length > 0) {
+                let img_form_data = new FormData();
+                img_form_data.append("file", file_input[0].files[0]);
+                img_form_data.append("action", "lm");
+                img_form_data.append("app", "improc");
+                upload_image_train(upload_file_button, upload_gif_div);
+
+                $.ajaxSetup({
+                     beforeSend: function(xhr, settings) {
+                         function getCookie(name) {
+                             let cookieValue = null;
+                             if (document.cookie && document.cookie !== '') {
+                                 let cookies = document.cookie.split(';');
+                                 for (let i = 0; i < cookies.length; i++) {
+                                     let cookie = jQuery.trim(cookies[i]);
+                                     // Does this cookie string begin with the name we want?
+                                     if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                         break;
+                                     }
+                                 }
+                             }
+                             return cookieValue;
+                         }
+                         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                             // Only send the token to relative URLs i.e. locally.
+                             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+                         }
+                     }
+                });
+
+                $.ajax({
+                        type: "POST",
+                        url:"{% url 'load_model' %}",
+                        data: img_form_data,
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        success: function (data) {
+                            const upload_gif = $("#upload_gif");
+                            let json = JSON.parse(data);
+                            let conf_matrix = json.conf_matrix;
+                            let loss_plot = json.loss_plot;
+                            let accuracy_plot = json.accuracy_plot;
+                            let hid_layers = json.hidden_layers;
+                            let out_layer = json.output_layer;
+                            upload_gif.html('');
+                            upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
+                                'class="ti-check"></i></div>');
+                            $('#num_layers').html('<strong> Number of layers: </strong>' + json.num_layers);
+                            $('#input_layer').html('<strong> Input layer batch size: </strong>' +
+                                json.input_layer[0] + 'x' + json.input_layer[1] + '<br><br>');
+                            $('#classes').html('<strong> Classes: </strong>' + json.classes + '<br><br>');
+                            //Info about hidden layers is added to the datatable
+                            for(let i = 0; i < hid_layers.length; i++){
+                                table.row.add(
+                                    ['Hidden layer ' + (i + 1), hid_layers[i][0], hid_layers[i][1]]
+                                ).draw();
+                            }
+                            //Info about output layer is added to the datatable
+                            table.row.add(
+                                ['Output layer', out_layer[0], out_layer[1]]
+                            ).draw();
+                            $("#test_model_div").prop('hidden', false);
+                            working_dir = json.load_dir_name;
+                            /*
+                            $('#confusion_matrix').html('<img alt="Confusion matrix" src="/media/' + conf_matrix +
+                                '" height="600" width="600">');
+                            $('#train_val_loss_plt').html('<img alt="Loss plot" src="/media/' + loss_plot + '" ' +
+                                'height="600" width="600">');
+                            $('#train_val_accuracy_plt').html('<img alt="Accuracy plot" src="/media/' + accuracy_plot +
+                                '" height="600" width="600">');*/
+
+                        },
+                        error: function () {
+                            alert("Something went wrong");
+                        }
+                    });
+            }else {
+                alert("Upload a model");
+            }
+        });
+
+    $("#upload_test_mdl_btn").on('click', function () {
+        const test_mdl_upload_button = $("#upload_test_mdl_btn");
+        const test_mdl_gif_div = $("#upload_test_mdl_gif");
+        const test_mdl_file_input = $("#test_mdl_input");
+        const results_div = $("#test_results_div");
+
+        if (test_mdl_file_input[0].files.length > 0) {
+            let test_form_data = new FormData();
+            test_form_data.append("file", test_mdl_file_input[0].files[0]);
+            test_form_data.append("dir_name", working_dir);
+            upload_image_train(test_mdl_upload_button, test_mdl_gif_div);
+
+            $.ajaxSetup({
+                 beforeSend: function(xhr, settings) {
+                     function getCookie(name) {
+                         let cookieValue = null;
+                         if (document.cookie && document.cookie !== '') {
+                             let cookies = document.cookie.split(';');
+                             for (let i = 0; i < cookies.length; i++) {
+                                 let cookie = jQuery.trim(cookies[i]);
+                                 // Does this cookie string begin with the name we want?
+                                 if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                     break;
+                                 }
+                             }
+                         }
+                         return cookieValue;
+                     }
+                     if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                         // Only send the token to relative URLs i.e. locally.
+                         xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+                     }
+                 }
+            });
+
+            $.ajax({
+                type: "POST",
+                url:"{% url 'test_model' %}",
+                data: test_form_data,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function (data) {
+                    let json = JSON.parse(data);
+                    let images = json.images_names;
+                    let predicitons = json.predictions;
+                    let dir_images = json.dir_image;
+                    let url;
+                    test_mdl_gif_div.html('');
+                    test_mdl_gif_div.html('<div class="offset-md-4"><i style="color:green;" ' +
+                        'class="ti-check"></i></div>');
+                    results_div.prop('hidden', false);
+
+                    for(let i = 0; i < images.length; i++){
+                        url = "{% url 'download_test_images' 'folder_name' 'image_dir' 'image_name' %}".
+                            replace(/folder_name/, working_dir);
+                        url = url.replace(/image_dir/, dir_images);
+                        url = url.replace(/image_name/, images[i]);
+                        table_results.row.add(
+                            ['<a href="' + url + '"' + 'id="download_model">' + images[i] + '</a>', predicitons[i]]
+                        ).draw();
+                    }
+
+                    $("#test_mdl_div").prop('hidden', true);
+                    $("#test_other_div").prop('hidden', false);
+                },
+                error: function () {
+                    alert("Something went wrong");
+                }
+            });
+        }else {
+
+        }
+    });
+
+    </script>
+
+{% endblock %}

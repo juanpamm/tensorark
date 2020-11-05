@@ -1,0 +1,374 @@
+#
+# This python script converts a sample of the notMNIST dataset into
+# the same file format used by the MNIST dataset. If you have a program
+# that uses the MNIST files, you can run this script over notMNIST to
+# produce a new set of data files that should be compatible with
+# your program.
+#
+# Instructions:
+#
+# 1) if you already have a MNIST data/ directory, rename it and create
+#    a new one
+#
+# $ mv data data.original_mnist
+# $ mkdir convert_MNIST
+#
+# 2) Download and unpack the notMNIST data. This can take a long time
+#    because the notMNIST data set consists of ~500,000 files
+#
+# $ curl -o notMNIST_small.tar.gz http://yaroslavvb.com/upload/notMNIST/notMNIST_small.tar.gz
+# $ curl -o notMNIST_large.tar.gz http://yaroslavvb.com/upload/notMNIST/notMNIST_large.tar.gz
+# $ tar xzf notMNIST_small.tar.gz
+# $ tar xzf notMNIST_large.tar.gz
+#
+# 3) Run this script to convert the data to MNIST files, then compress them.
+#    These commands will produce files of the same size as MNIST
+#    notMNIST is larger than MNIST, and you can increase the sizes if you want.
+#
+# $ python convert_to_mnist_format.py notMNIST_small test 1000
+# $ python convert_to_mnist_format.py notMNIST_large train 6000
+# $ gzip convert_MNIST/*ubyte
+#
+# 4) After update, we cancel output path and replace with 'train', 'test' or test ratio number,
+#    it not only work on 10 labels but more,
+#    it depends on your subdir number under target folder, you can input or not input more command
+#
+# Now we define input variable like following:
+# $ python convert_to_mnist_format.py target_folder test_train_or_ratio data_number
+#
+# target_folder: must give minimal folder path to convert data
+# test_train_or_ratio: must define 'test' or 'train' about this data,
+#                      if you want seperate total data to test and train automatically,
+#                      you can input one integer for test ratio,
+#                      e.q. if you input 2, it mean 2% data will become test data
+# data_number: if you input 0 or nothing, it convert total images under each label folder,
+#        e.q.
+#          a. python convert_to_mnist_format.py notMNIST_small test 0
+#          b. python convert_to_mnist_format.py notMNIST_small test
+#          c. python convert_to_mnist_format.py notMNIST_small train 0
+#          d. python convert_to_mnist_format.py notMNIST_small train
+#
+import zipfile
+import gzip
+import shutil
+import numpy
+import imageio
+import sys
+import os
+import random
+import pandas
+import seaborn
+import json
+from natsort import natsorted
+from matplotlib import pyplot as plt
+
+height = 0
+width = 0
+class_names = []
+
+
+def get_subdir(folder):
+    list_dir = None
+    for root, dirs, files in os.walk(folder):
+        if not dirs == []:
+            list_dir = dirs
+            break
+    list_dir.sort()
+    return list_dir
+
+
+def get_labels_and_files(folder, number=0):
+    # Make a list of lists of files for each label
+    filelists = []
+    subdir = get_subdir(folder)
+    for label in range(0, len(subdir)):
+        filelist = []
+        filelists.append(filelist)
+        dirname = os.path.join(folder, subdir[label])
+        for file in os.listdir(dirname):
+            if file.endswith('.png'):
+                fullname = os.path.join(dirname, file)
+                if os.path.getsize(fullname) > 0:
+                    filelist.append(fullname)
+                else:
+                    print('file ' + fullname + ' is empty')
+        # sort each list of files so they start off in the same order
+        # regardless of how the order the OS returns them in
+        filelist.sort()
+
+    # Take the specified number of items for each label and
+    # build them into an array of (label, filename) pairs
+    # Since we seeded the RNG, we should get the same sample each run
+    labels_and_files = []
+    for label in range(0, len(subdir)):
+        count = number if number > 0 else len(filelists[label])
+        filelist = random.sample(filelists[label], count)
+        for filename in filelist:
+            labels_and_files.append((label, filename))
+
+    return labels_and_files
+
+
+def make_arrays(labels_and_files, ratio):
+    global height, width
+    images = []
+    labels = []
+    im_shape = imageio.imread(labels_and_files[0][1]).shape
+    if len(im_shape) > 2:
+        height, width, channels = im_shape
+    else:
+        height, width = im_shape
+        channels = 1
+    for i in range(0, len(labels_and_files)):
+        # display progress, since this can take a while
+        if i % 100 == 0:
+            sys.stdout.write("\r%d%% complete" %
+                             ((i * 100) / len(labels_and_files)))
+            sys.stdout.flush()
+
+        filename = labels_and_files[i][1]
+        try:
+            image = imageio.imread(filename)
+            images.append(image)
+            labels.append(labels_and_files[i][0])
+        except OSError:
+            # If this happens we won't have the requested number
+            print("\nCan't read image file " + filename)
+
+    if ratio == 'train':
+        ratio = 0
+    elif ratio == 'test':
+        ratio = 1
+    else:
+        ratio = float(ratio) / 100
+    count = len(images)
+    train_num = int(count * (1 - ratio))
+    test_num = count - train_num
+
+    if channels > 1:
+        train_imagedata = numpy.zeros(
+            (train_num, height, width, channels), dtype=numpy.uint8)
+        test_imagedata = numpy.zeros(
+            (test_num, height, width, channels), dtype=numpy.uint8)
+    else:
+        train_imagedata = numpy.zeros(
+            (train_num, height, width), dtype=numpy.uint8)
+        test_imagedata = numpy.zeros(
+            (test_num, height, width), dtype=numpy.uint8)
+    train_labeldata = numpy.zeros(train_num, dtype=numpy.uint8)
+    test_labeldata = numpy.zeros(test_num, dtype=numpy.uint8)
+
+    for i in range(train_num):
+        train_imagedata[i] = images[i]
+        train_labeldata[i] = labels[i]
+
+    for i in range(0, test_num):
+        test_imagedata[i] = images[train_num + i]
+        test_labeldata[i] = labels[train_num + i]
+    print("\n")
+    return train_imagedata, train_labeldata, test_imagedata, test_labeldata
+
+
+def write_labeldata(labeldata, outputfile):
+    header = numpy.array([0x0801, len(labeldata)], dtype='>i4')
+    with open(outputfile, "wb") as f:
+        f.write(header.tobytes())
+        f.write(labeldata.tobytes())
+
+
+def write_imagedata(imagedata, outputfile):
+    global height, width
+    header = numpy.array([0x0803, len(imagedata), height, width], dtype='>i4')
+    with open(outputfile, "wb") as f:
+        f.write(header.tobytes())
+        f.write(imagedata.tobytes())
+
+
+def convert_image_set(parameters, dst_path):
+    train_label_path = dst_path + "/train-labels-idx1-ubyte"
+    train_image_path = dst_path + "/train-images-idx3-ubyte"
+    test_label_path = dst_path + "/t10k-labels-idx1-ubyte"
+    test_image_path = dst_path + "/t10k-images-idx3-ubyte"
+    labels_and_files = []
+
+    if not os.path.exists(dst_path):
+        os.makedirs(dst_path)
+    if len(parameters) is 2:
+        labels_and_files = get_labels_and_files(parameters[0])
+    elif len(parameters) is 3:
+        labels_and_files = get_labels_and_files(parameters[0], int(parameters[2]))
+    random.shuffle(labels_and_files)
+
+    train_image_data, train_label_data, test_image_data, test_label_data = make_arrays(
+        labels_and_files, parameters[1])
+
+    if parameters[1] == 'train':
+        write_labeldata(train_label_data, train_label_path)
+        write_imagedata(train_image_data, train_image_path)
+    elif parameters[1] == 'test':
+        write_labeldata(test_label_data, test_label_path)
+        write_imagedata(test_image_data, test_image_path)
+    else:
+        write_labeldata(train_label_data, train_label_path)
+        write_imagedata(train_image_data, train_image_path)
+        write_labeldata(test_label_data, test_label_path)
+        write_imagedata(test_image_data, test_image_path)
+
+
+def file_extraction_manager(mediar, file_name, working_dir):
+    path_to_file = os.path.join(mediar, file_name)
+
+    with zipfile.ZipFile(path_to_file, 'r') as zip_file:
+        zip_file.extractall(working_dir)
+
+    if os.path.exists(path_to_file):
+        os.remove(path_to_file)
+
+
+def get_name_for_working_dir(mediar, action, app):
+    mediar_dirs_list = os.listdir(mediar)
+    tmp_mediar_dirs_list = []
+    prefix_new_dir = ""
+    name_for_new_dir = ""
+
+    if action == 'wd' and app == 'improc':
+        prefix_new_dir = "ta_model_improc_wd_"
+        name_for_new_dir = "ta_model_improc_wd_1"
+    elif action == 'wd' and app == 'textproc':
+        prefix_new_dir = "ta_model_textproc_wd_"
+        name_for_new_dir = "ta_model_textproc_wd_1"
+    elif action == 'lm' and app == 'improc':
+        prefix_new_dir = "ta_loaded_model_improc_"
+        name_for_new_dir = "ta_loaded_model_improc_1"
+    elif action == 'lm' and app == 'textproc':
+        prefix_new_dir = "ta_loaded_model_textproc_"
+        name_for_new_dir = "ta_loaded_model_textproc_1"
+
+    for work_dir in mediar_dirs_list:
+        if work_dir.find(prefix_new_dir) != -1:
+            tmp_mediar_dirs_list.append(work_dir)
+
+    sorted_list = natsorted(tmp_mediar_dirs_list)
+
+    if len(tmp_mediar_dirs_list) != 0:
+        last_dir = sorted_list[len(tmp_mediar_dirs_list) - 1]
+        number_of_last_dir = int(last_dir.split('_')[4])
+        name_for_new_dir = prefix_new_dir + str(number_of_last_dir + 1)
+
+    return name_for_new_dir
+
+
+def get_last_modified_dir(mediar):
+    tmp_date = 0
+    tmp_position = 0
+    list_dirs = os.listdir(mediar)
+
+    for i in range(len(list_dirs)):
+        if os.path.isdir(os.path.join(mediar, list_dirs[i])) is True:
+            if i == 0:
+                tmp_date = os.path.getmtime(os.path.join(mediar, list_dirs[i]))
+                tmp_position = i
+            elif i != 0:
+                if tmp_date < os.path.getmtime(os.path.join(mediar, list_dirs[i])):
+                    tmp_date = os.path.getmtime(os.path.join(mediar, list_dirs[i]))
+                    tmp_position = i
+
+    return os.path.join(mediar, list_dirs[tmp_position])
+
+
+def gzip_all_files_in_dir(path_to_dir):
+    list_dir = os.listdir(path_to_dir)
+
+    for i in range(len(list_dir)):
+        if os.path.isfile(os.path.join(path_to_dir, list_dir[i])) is True:
+            with open(os.path.join(path_to_dir, list_dir[i]), 'rb') as file_opened:
+                with gzip.open(os.path.join(path_to_dir, list_dir[i]) + '.gz', 'wb') as file_wr:
+                    shutil.copyfileobj(file_opened, file_wr)
+            os.remove(os.path.join(path_to_dir, list_dir[i]))
+
+
+def set_name_classes(path):
+    class_names.clear()
+    list_dir = get_subdir(path)
+    for label in list_dir:
+        class_names.append(label)
+
+
+def load_data(dst_path):
+    files = os.listdir(dst_path)
+    sorted(files)
+    paths = []
+
+    for fname in files:
+        paths.append(os.path.join(dst_path, fname))
+
+    with gzip.open(paths[3], 'rb') as lbpath:
+        y_train = numpy.frombuffer(lbpath.read(), numpy.uint8, offset=8)
+
+    with gzip.open(paths[2], 'rb') as imgpath:
+        x_train = numpy.frombuffer(imgpath.read(), numpy.uint8, offset=16).reshape(len(y_train), 28, 28)
+
+    with gzip.open(paths[1], 'rb') as lbpath:
+        y_test = numpy.frombuffer(lbpath.read(), numpy.uint8, offset=8)
+
+    with gzip.open(paths[0], 'rb') as imgpath:
+        x_test = numpy.frombuffer(imgpath.read(), numpy.uint8, offset=16).reshape(len(y_test), 28, 28)
+
+    return (x_train, y_train), (x_test, y_test)
+
+
+def save_model_to_json(path_to_save, model):
+    model_json = model.to_json()
+    temp_json = json.loads(model_json)
+    temp_json['classes'] = class_names
+    model_json = json.dumps(temp_json)
+    path_to_json_file = os.path.join(path_to_save, 'json_nn.json')
+    with open(path_to_json_file, 'w') as json_file:
+        json_file.write(model_json)
+
+
+def compress_model_folder(path_to_working_dir):
+    path_to_save_zip = os.path.join(path_to_working_dir, 'nn_model.zip')
+    path_to_folder = os.path.join(path_to_working_dir, 'saved_model')
+    length = len(path_to_folder)
+    ziph = zipfile.ZipFile(path_to_save_zip, 'w', zipfile.ZIP_DEFLATED)
+    for root, dirs, files in os.walk(path_to_folder):
+        folder = root[length:]
+        for file in files:
+            ziph.write(os.path.join(root, file), os.path.join(folder, file))
+
+
+def confusion_matrix_plotter(con_mat_val, classes, con_matrix_img_path, checkpoint_path):
+    con_mat_df = pandas.DataFrame(con_mat_val, index=classes, columns=classes)
+    plt.figure(figsize=(8, 8))
+    seaborn.heatmap(con_mat_df, annot=True, cmap=plt.cm.Blues, fmt="d")
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.savefig(con_matrix_img_path, format='png', bbox_inches='tight')
+    shutil.copy(con_matrix_img_path, checkpoint_path)
+    plt.clf()
+
+
+def loss_accuracy_plotter(epochs, loss, val_loss, acc, val_acc, checkpoint_path, loss_plot_img_path,
+                          accuracy_plot_img_path):
+
+    plt.plot(epochs, loss, 'b', label='Training loss', color='yellow')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss', color='blue')
+    plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.savefig(loss_plot_img_path, format='png', bbox_inches="tight")
+    shutil.copy(loss_plot_img_path, checkpoint_path)
+    plt.clf()
+
+    plt.plot(epochs, acc, 'b', label='Training acc', color='yellow')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc', color='blue')
+    plt.title('Training and validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend(loc='lower right')
+    plt.savefig(accuracy_plot_img_path, format='png', bbox_inches="tight")
+    shutil.copy(accuracy_plot_img_path, checkpoint_path)
+    plt.clf()

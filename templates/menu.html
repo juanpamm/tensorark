@@ -1,2 +1,27 @@
-<!DOCTYPE html>
-</html>
+<li class="menu-item-has-children dropdown {% if 'im_proc/' in request.path %} active open
+{% else %} disabled {% endif %}">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <i class="menu-icon fa fa-picture-o"></i> <span class="pull-left"> Image processing module </span></a>
+    <ul class="sub-menu children dropdown-menu">
+        <li class="{% if 'im_proc' in request.path %} show {% endif %}"><i class="fa fa-wrench"></i>
+            <a href="{% url 'upload_image_nn_template' %}">Build neural network</a></li>
+        <li class="{% if 'im_proc' in request.path %} show {% endif %}"><i class="fa fa-upload"></i>
+            <a href="{% url 'load_model_template' %}">Load neural network</a></li>
+    </ul>
+</li>
+<li class="menu-item-has-children dropdown {% if 'text_proc/' in request.path %} active open
+{% else %} disabled {% endif %}">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <i class="menu-icon fa fa-file"></i> <span class="pull-left"> Text processing module </span></a>
+    <ul class="sub-menu children dropdown-menu">
+        <li class="{% if 'text_proc' in request.path %} show {% endif %}"><i class="fa fa-wrench"></i>
+            <a href="{% url 'upload_text_nn_template' %}">Build neural network</a></li>
+        <li class="{% if 'text_proc' in request.path %} show {% endif %}"><i class="fa fa-upload"></i>
+            <a href="{% url 'load_textproc_model_template' %}">Load neural network</a></li>
+    </ul>
+</li>
+{% comment %}
+
+
+
+{% endcomment %}

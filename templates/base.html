@@ -22,7 +22,6 @@
     <link rel="stylesheet" href="{% static 'assets/css/cs-skin-elastic.css' %}">
     <!-- <link rel="stylesheet" href="assets/css/bootstrap-select.less"> -->
     <link rel="stylesheet" href="{% static 'assets/scss/style.css' %}">
-    <link href="{% static 'assets/css/lib/vector-map/jqvmap.min.css' %}" rel="stylesheet">
 
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,700,800' rel='stylesheet' type='text/css'>
 
@@ -33,8 +32,6 @@
 
 </head>
 <body>
-
-
         <!-- Left Panel -->
 
     <aside id="left-panel" class="left-panel">
@@ -44,8 +41,8 @@
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#main-menu" aria-controls="main-menu" aria-expanded="false" aria-label="Toggle navigation">
                     <i class="fa fa-bars"></i>
                 </button>
-                <a class="navbar-brand" href="./">Neural Network <!--<img src="{% static 'images/logo.png' %}" alt="Logo">--></a>
-                <a class="navbar-brand hidden" href="./"> NN <!--<img src="{% static 'images/logo2.png' %}" alt="Logo">--></a>
+                <a class="navbar-brand" href="./">TensorArk <!--<img src="{% static 'images/logo.png' %}" alt="Logo">--></a>
+                <a class="navbar-brand hidden" href="./"> TA <!--<img src="{% static 'images/logo2.png' %}" alt="Logo">--></a>
             </div>
 
             <div id="main-menu" class="main-menu collapse navbar-collapse">
@@ -53,7 +50,7 @@
                     {% include "menu.html" %}
                     {% comment %}
                     <li class="active">
-                        <a href="index.html"> <i class="menu-icon fa fa-dashboard"></i>Dashboard </a>
+                        <a href="build_improc_nn.html"> <i class="menu-icon fa fa-dashboard"></i>Dashboard </a>
                     </li>
                     <h3 class="menu-title">UI elements</h3><!-- /.menu-title -->
                     <li class="menu-item-has-children dropdown">
@@ -301,31 +298,10 @@
     <script src="{% static 'assets/js/main.js' %}"></script>
 
 
-    <script src="{% static 'assets/js/lib/chart-js/Chart.bundle.js' %}"></script>
-    <script src="{% static 'assets/js/dashboard.js' %}"></script>
-    <script src="{% static 'assets/js/widgets.js' %}"></script>
-    <script src="{% static 'assets/js/lib/vector-map/jquery.vmap.js' %}"></script>
-    <script src="{% static 'assets/js/lib/vector-map/jquery.vmap.min.js' %}"></script>
-    <script src="{% static 'assets/js/lib/vector-map/jquery.vmap.sampledata.js' %}"></script>
-    <script src="{% static 'assets/js/lib/vector-map/country/jquery.vmap.world.js' %}"></script>
-    <script>
-        ( function ( $ ) {
-            "use strict";
+    <!-- <script src="{% static 'assets/js/lib/chart-js/Chart.bundle.js' %}"></script> -->
+    <!-- <script src="{% static 'assets/js/dashboard.js' %}"></script> -->
+    <!-- <script src="{% static 'assets/js/widgets.js' %}"></script> -->
 
-            jQuery( '#vmap' ).vectorMap( {
-                map: 'world_en',
-                backgroundColor: null,
-                color: '#ffffff',
-                hoverOpacity: 0.7,
-                selectedColor: '#1de9b6',
-                enableZoom: true,
-                showTooltip: true,
-                values: sample_data,
-                scaleColors: [ '#1de9b6', '#03a9f5' ],
-                normalizeFunction: 'polynomial'
-            } );
-        } )( jQuery );
-    </script>
 
     {% block js_block%}
     {% endblock %}

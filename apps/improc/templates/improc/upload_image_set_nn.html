@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load bootstrap3 %}
+{% load staticfiles %}
+
+{% block title_block %} TensorArk {% endblock  %}
+
+{% block page_title_block %} TensorArk {% endblock %}
+
+{% block css_block %}
+
+    <link rel="stylesheet" href="{% static 'assets/css/lib/datatable/dataTables.bootstrap.min.css' %}">
+
+{% endblock %}
+
+{% block body_block %}
+    <div class="col-md-9 col-lg-9 col-xl-7 offset-md-2 offset-lg-3 offset-xl-2">
+                <div class="card">
+                    <div class="card-header">
+                        <strong class="card-title">
+                            Upload your training set
+                        </strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <div class="col col-md-3">
+                                <label for="file_input" class=" form-control-label">File input</label>
+                            </div>
+                            <div class="col-12 col-md-7">
+                                <input type="file" id="file_input" name="fileinp" class="form-control-file">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" id="upload_file_btn" class="btn btn-info">
+                                    <i class="ti-upload"></i></button>
+                            </div>
+                            <div class="col-md-2" id="upload_gif">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <strong class="card-title">
+                                Progress status
+                            </strong>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-7 offset-md-2">
+                                <label class="form-control-label">File uploading step</label>
+                            </div>
+                            <div class="col-md-2" id="upload_file_gif">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-7 offset-md-2">
+                                <label class="form-control-label">File decompression step</label>
+                            </div>
+                            <div class="col-md-2" id="decompression_file_gif">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-7 offset-md-2">
+                                <label class="form-control-label">Image set convertion step</label>
+                            </div>
+                            <div class="col-md-2" id="convertion_set_gif">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div id="div_next_button" class="col-md-4 offset-md-4">
+                        </div>
+                    </div>
+                </div>
+            </div>
+{% endblock %}
+
+{% block js_block %}
+
+    <!-- Datatable scripts -->
+
+    <script src="{% static 'assets/js/lib/data-table/datatables.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/vfs_fonts.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.html5.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.print.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/buttons.colVis.min.js' %}"></script>
+    <script src="{% static 'assets/js/lib/data-table/datatables-init.js' %}"></script>
+
+    <script src="{% static 'assets/js/lib/chosen/chosen.jquery.min.js' %}"></script>
+
+    <script>
+
+    let img_set_name = "";
+    const upload_file_gif = $("#upload_file_gif");
+    const decompression_file_gif = $("#decompression_file_gif");
+    const convertion_set_gif = $("#convertion_set_gif");
+
+    function upload_image_train() {
+            const upload_file_button = $("#upload_file_btn");
+            upload_file_button.prop('disabled', true);
+            upload_file_button.hide();
+            $('#upload_gif').html('<div>' +
+                    '<img id="loading_image" class="icon-loading" style="width: 50%; height: 50%;"' +
+                    'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1"/></div>');
+            upload_file_gif.html('<img class="icon-loading" ' +
+                    'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1" height="30" width="30"/>');
+    }
+
+    $('#upload_file_btn').on('click', function () {
+            const file_input = $('#file_input');
+            if (file_input[0].files.length > 0) {
+                let img_form_data = new FormData();
+                img_form_data.append("file", file_input[0].files[0]);
+                img_form_data.append("action", "wd");
+                img_form_data.append("app", "improc");
+                upload_image_train();
+
+                $.ajaxSetup({
+                     beforeSend: function(xhr, settings) {
+                         function getCookie(name) {
+                             let cookieValue = null;
+                             if (document.cookie && document.cookie !== '') {
+                                 let cookies = document.cookie.split(';');
+                                 for (let i = 0; i < cookies.length; i++) {
+                                     let cookie = jQuery.trim(cookies[i]);
+                                     // Does this cookie string begin with the name we want?
+                                     if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                         break;
+                                     }
+                                 }
+                             }
+                             return cookieValue;
+                         }
+                         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                             // Only send the token to relative URLs i.e. locally.
+                             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+                         }
+                     }
+                });
+
+                $.ajax({
+                        type: "POST",
+                        url:"{% url 'upload_image_set' %}",
+                        data: img_form_data,
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        success: function (data) {
+                            let json = JSON.parse(data);
+                            img_set_name = json.working_dir;
+                            upload_file_gif.html('<i style="color:green;" class="ti-check"></i>');
+                            decompression_file_gif.html('<img class="icon-loading" ' +
+                                    'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1" height="30" width="30"/>');
+                            let decomp_data = new FormData();
+                            decomp_data.append("working_dir", img_set_name);
+                            decomp_data.append("file_name", json.file_name);
+
+                            //Ajax request for file decompression
+                            $.ajax({
+                                type: "POST",
+                                url:"{% url 'decompress_image_set' %}",
+                                data: decomp_data,
+                                cache: false,
+                                contentType: false,
+                                processData: false,
+                                success: function (data) {
+                                    let extracted_dir_json = JSON.parse(data);
+                                    let convert_data = new FormData();
+                                    convert_data.append('extracted_dir', extracted_dir_json.extracted_dir);
+                                    convert_data.append('working_dir', img_set_name);
+                                    decompression_file_gif.html('<i style="color:green;" class="ti-check"></i>');
+                                    convertion_set_gif.html('<img class="icon-loading" ' +
+                                            'src="{% static 'gif/Rolling-2s-200px.gif' %}" tabindex="1" ' +
+                                            'height="30" width="30"/>');
+
+                                    //Ajax request for image set convertion
+                                    $.ajax({
+                                        type: "POST",
+                                        url:"{% url 'convert_image_set' %}",
+                                        data: convert_data,
+                                        cache: false,
+                                        contentType: false,
+                                        processData: false,
+                                        success: function (data) {
+                                            let return_data = JSON.parse(data);
+                                            if (return_data.success_val === true) {
+                                                $('#upload_gif').html('<i style="color:green;" class="ti-check"></i>');
+                                                convertion_set_gif.html('<i style="color:green;" class="ti-check"></i>');
+                                                let url = "{% url 'build_improc_nn_template' 'folder_name' %}".
+                                                replace(/folder_name/, img_set_name);
+                                                $('#div_next_button').html('<a href="' + url + '"' +
+                                                    'id="next_button" class="btn btn-success"' +
+                                                    'style="color: white;"> Next <i class="ti-angle-double-right" ' +
+                                                    'style="margin-left: 8px; color: white;"></i></a>');
+                                            }
+
+                                        },
+                                        error: function () {
+                                            alert("Something went wrong");
+                                        }
+                                    });
+                                    //End of ajax request for image set convertion
+                                },
+                                error: function () {
+                                    alert("Something went wrong");
+                                }
+                            });
+                            //End of ajax request for file decompression
+                        },
+                        error: function () {
+                            alert("Something went wrong");
+                        }
+                    });
+            }else {
+                alert("Upload your image set");
+            }
+        });
+    /*
+    upload_gif.html('');
+                            upload_gif.html('<div class="offset-md-4"><i style="color:green;" ' +
+                                'class="ti-check"></i></div>');
+                            let url = "{% url 'build_improc_nn_template' 'folder_name' %}".
+                            replace(/folder_name/, img_set_name);
+                            $('#div_next_button').html('<a href="' + url + '"' +
+                                'id="next_button" class="btn btn-success"' +
+                                'style="color: white;"> Next <i class="ti-angle-double-right" ' +
+                                'style="margin-left: 8px; color: white;"></i></a>');*/
+
+    </script>
+
+{% endblock %}

@@ -6,7 +6,7 @@ Currently, the application contains two modules, Image Classification and Text C
 The two modules provide the following services:
 
 - Upload image or text datasets in zip format. It is important that the uploaded datasets contain the following structure:
-  ![folder_structure](static/images/folder_structure.png)
+  ![folder_structure](static/images/folder_structure.jpg)
 - Design the structure of neural networks
 - Train and test a neural network
 - See the percentage of accuracy and graphics related to the training and testing process

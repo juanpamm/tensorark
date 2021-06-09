@@ -1,5 +1,5 @@
 numpy==1.18.5
-Django==2.2.18
+Django==2.2.22
 Pillow==8.1.2
 tensorflow==2.4.0
 django-select2
